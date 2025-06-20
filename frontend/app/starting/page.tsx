@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react';
-import { Paperclip, Plus } from 'lucide-react';
+import { Paperclip, Send } from 'lucide-react';
 
 // Aurora Background Component
 const AuroraBackground = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -76,9 +76,13 @@ export default function Starting() {
     <AuroraBackground className="bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
         {/* Header */}
         <header className="flex justify-between items-center px-6 py-6 backdrop-blur-sm bg-transparent">
-        <div className="text-2xl font-bold text-gray-900">
+        <div
+        onClick={() => window.location.href = '/'}
+        className="text-2xl font-bold text-gray-900 cursor-pointer select-none"
+        >
             Supernote
         </div>
+
         <nav className="flex items-center space-x-8">
             <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors font-medium">
             Community
@@ -111,8 +115,11 @@ export default function Starting() {
                 <button className="text-gray-600 hover:text-gray-800 transition-colors p-1 hover:bg-gray-100 rounded-lg">
                     <Paperclip className="w-5 h-5" />
                 </button>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg">
-                    <Plus className="w-5 h-5" />
+                <button 
+                  onClick={() => window.location.href = '/graph'} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg"
+                >
+                    <Send className="w-5 h-5" />
                 </button>
                 </div>
             </div>
