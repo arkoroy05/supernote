@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { TweetType, CommentType } from "../types";
-import Image from "next/image";
 
 interface TweetProps {
   tweet: TweetType;
@@ -52,7 +51,7 @@ export function Comment({ comment }: CommentProps) {
     <div className="flex space-x-3">
       <div className="flex-shrink-0">
         <div className="h-8 w-8 rounded-full overflow-hidden">
-          <Image src={comment.user.avatar} alt={comment.user.name} width={32} height={32} className="object-cover" />
+          <img src={comment.user.avatar} alt={comment.user.name} className="h-full w-full object-cover" />
         </div>
       </div>
       <div className="flex-1 min-w-0">
@@ -124,7 +123,7 @@ export function Tweet({ tweet }: TweetProps) {
       <div className="flex space-x-3">
         <div className="flex-shrink-0">
           <div className="h-10 w-10 rounded-full overflow-hidden">
-            <Image src={tweet.user.avatar} alt={tweet.user.name} width={40} height={40} className="object-cover" />
+            <img src={tweet.user.avatar} alt={tweet.user.name} className="h-full w-full object-cover" />
           </div>
         </div>
         <div className="flex-1 min-w-0">

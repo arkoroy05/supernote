@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 
 const navItems = [
   { icon: "🏠", label: "Flow Zone" },
@@ -38,7 +37,7 @@ export function Sidebar() {
       <div className="mb-4 w-[200px] px-3">
         <div className="flex items-center space-x-3 p-3 rounded-full hover:bg-[rgba(0,0,0,0.05)] cursor-pointer">
           <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
-            <Image src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" alt="Profile" width={40} height={40} />
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" alt="Profile" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">Arko Roy</p>
