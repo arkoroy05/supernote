@@ -7,6 +7,7 @@ import { Sidebar } from "../components/Sidebar";
 import { TweetType, TrendingTopicType } from "../types";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 // Mock data (should be replaced with real data/fetch in production)
 const mockTweet: TweetType = {
@@ -89,7 +90,7 @@ export default function TweetDetailPage() {
           {/* Tweet detail */}
           <div className="flex px-6 pt-6 pb-2">
             <div className="flex-shrink-0">
-              <img src={tweet.user.avatar} alt={tweet.user.name} className="h-12 w-12 rounded-full object-cover" />
+              <Image src={tweet.user.avatar} alt={tweet.user.name} width={48} height={48} className="rounded-full object-cover" />
             </div>
             <div className="ml-3 flex-1 min-w-0">
               <div className="flex items-center">
@@ -133,7 +134,7 @@ export default function TweetDetailPage() {
 
           {/* Reply box */}
           <div className="flex items-center px-6 py-4 border-b border-[#e5e7eb]">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" alt="Profile" className="h-10 w-10 rounded-full object-cover" />
+            <Image src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" alt="Profile" width={40} height={40} className="rounded-full object-cover" />
             <input
               type="text"
               value={reply}
@@ -149,7 +150,7 @@ export default function TweetDetailPage() {
             {tweet.commentsList.map((comment) => (
               <div key={comment.id} className="flex px-6 py-4">
                 <div className="flex-shrink-0">
-                  <img src={comment.user.avatar} alt={comment.user.name} className="h-10 w-10 rounded-full object-cover" />
+                  <Image src={comment.user.avatar} alt={comment.user.name} width={40} height={40} className="rounded-full object-cover" />
                 </div>
                 <div className="ml-3 flex-1 min-w-0">
                   <div className="flex items-center">
@@ -202,7 +203,7 @@ export default function TweetDetailPage() {
               {relevantPeople.map((person) => (
                 <div key={person.username} className="flex items-center justify-between">
                   <div className="flex items-center min-w-0">
-                    <img src={person.avatar} alt={person.name} className="h-10 w-10 rounded-full object-cover" />
+                    <Image src={person.avatar} alt={person.name} width={40} height={40} className="rounded-full object-cover" />
                     <div className="ml-3 min-w-0">
                       <div className="flex items-center">
                         <span className="font-semibold text-base truncate">{person.name}</span>

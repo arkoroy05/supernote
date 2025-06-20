@@ -4,7 +4,7 @@ import {
     cookieStorage,
     createStorage
   } from 'wagmi'
-  import { baseSepolia,sepolia } from 'wagmi/chains'
+  import { sepolia } from 'wagmi/chains'
   
   export function getConfig() {
     return createConfig({

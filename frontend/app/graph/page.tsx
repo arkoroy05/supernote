@@ -147,7 +147,7 @@ export default function GraphPage() {
     });
 
     setNodeId(prev => prev + 1);
-  }, []);
+  }, [setNodes, setEdges]);
 
   // Initialize nodes with generate function
   useEffect(() => {
@@ -160,7 +160,7 @@ export default function GraphPage() {
         },
       }))
     );
-  }, []); // Empty dependency array - only run once on mount
+  }, [generateNewNode, setNodes]);
 
   // Handle edge connections
   const onConnect = useCallback(
