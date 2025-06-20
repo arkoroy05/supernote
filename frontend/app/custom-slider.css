@@ -1,0 +1,12 @@
+.custom-slider {
+    @apply w-full h-1 bg-white/20;
+  }
+  
+  .custom-slider .custom-slider-thumb {
+    @apply w-0.5 h-4 bg-white/50;
+  }
+  
+  .custom-slider .custom-slider-track {
+    @apply h-full bg-white/50;
+  }
+  

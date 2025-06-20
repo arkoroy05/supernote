@@ -1,0 +1,280 @@
+{
+    "designSystemProfile": {
+      "name": "Enterprise Workspace Interface",
+      "version": "1.0",
+      "category": "productivity_app",
+      "description": "Modern enterprise application design with sidebar navigation, search functionality, and content organization",
+      
+      "colorPalette": {
+        "primary": {
+          "background": "#ffffff",
+          "surface": "#f8f9fa",
+          "sidebar": "#f5f5f5"
+        },
+        "text": {
+          "primary": "#1a1a1a",
+          "secondary": "#6b7280",
+          "muted": "#9ca3af",
+          "placeholder": "#d1d5db"
+        },
+        "accent": {
+          "blue": "#3b82f6",
+          "green": "#10b981",
+          "orange": "#f59e0b",
+          "purple": "#8b5cf6",
+          "red": "#ef4444"
+        },
+        "borders": {
+          "light": "#e5e7eb",
+          "medium": "#d1d5db"
+        }
+      },
+  
+      "typography": {
+        "fontFamily": {
+          "primary": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        },
+        "fontSizes": {
+          "xs": "11px",
+          "sm": "13px",
+          "base": "14px",
+          "lg": "16px",
+          "xl": "18px"
+        },
+        "fontWeights": {
+          "normal": 400,
+          "medium": 500,
+          "semibold": 600
+        },
+        "lineHeights": {
+          "tight": 1.2,
+          "normal": 1.4,
+          "relaxed": 1.6
+        }
+      },
+  
+      "spacing": {
+        "xs": "4px",
+        "sm": "8px",
+        "base": "12px",
+        "md": "16px",
+        "lg": "20px",
+        "xl": "24px",
+        "2xl": "32px",
+        "3xl": "48px"
+      },
+  
+      "borderRadius": {
+        "none": "0px",
+        "sm": "4px",
+        "base": "6px",
+        "md": "8px",
+        "lg": "12px",
+        "full": "9999px"
+      },
+  
+      "shadows": {
+        "none": "none",
+        "subtle": "0 1px 2px rgba(0, 0, 0, 0.05)",
+        "soft": "0 2px 4px rgba(0, 0, 0, 0.1)",
+        "medium": "0 4px 6px rgba(0, 0, 0, 0.1)"
+      },
+  
+      "layout": {
+        "structure": {
+          "type": "sidebar_main_content",
+          "sidebar": {
+            "width": "240px",
+            "position": "fixed_left",
+            "background": "surface_light",
+            "padding": "base"
+          },
+          "header": {
+            "height": "60px",
+            "background": "white",
+            "border_bottom": "light",
+            "padding_horizontal": "md"
+          },
+          "main_content": {
+            "margin_left": "sidebar_width",
+            "padding": "lg",
+            "background": "white"
+          }
+        },
+        "grid": {
+          "columns": 12,
+          "gap": "md"
+        }
+      },
+  
+      "components": {
+        "navigation": {
+          "sidebar": {
+            "style": "vertical_list",
+            "item_height": "40px",
+            "item_padding": "sm md",
+            "item_border_radius": "base",
+            "hover_background": "rgba(0, 0, 0, 0.05)",
+            "active_background": "accent_color_light",
+            "icon_size": "16px",
+            "icon_margin_right": "sm"
+          },
+          "sections": {
+            "style": "grouped_with_headers",
+            "header_typography": "xs semibold uppercase",
+            "header_color": "text_muted",
+            "header_margin_bottom": "xs",
+            "section_margin_bottom": "lg"
+          }
+        },
+  
+        "search": {
+          "style": "prominent_top_bar",
+          "input": {
+            "height": "36px",
+            "border_radius": "md",
+            "background": "surface",
+            "border": "light",
+            "padding": "sm md",
+            "placeholder_color": "text_muted",
+            "focus_border": "accent_blue"
+          },
+          "results": {
+            "background": "white",
+            "shadow": "medium",
+            "border_radius": "md",
+            "max_height": "400px",
+            "overflow": "scroll"
+          }
+        },
+  
+        "content_list": {
+          "item": {
+            "padding": "md",
+            "border_bottom": "light",
+            "hover_background": "surface_light"
+          },
+          "title": {
+            "typography": "base semibold",
+            "color": "text_primary",
+            "margin_bottom": "xs"
+          },
+          "metadata": {
+            "typography": "sm",
+            "color": "text_secondary",
+            "margin_bottom": "xs"
+          },
+          "description": {
+            "typography": "sm",
+            "color": "text_secondary",
+            "line_height": "relaxed"
+          }
+        },
+  
+        "buttons": {
+          "primary": {
+            "background": "accent_blue",
+            "color": "white",
+            "padding": "sm md",
+            "border_radius": "base",
+            "font_weight": "medium",
+            "hover_opacity": 0.9
+          },
+          "secondary": {
+            "background": "surface",
+            "color": "text_primary",
+            "border": "light",
+            "padding": "sm md",
+            "border_radius": "base",
+            "hover_background": "rgba(0, 0, 0, 0.05)"
+          },
+          "ghost": {
+            "background": "transparent",
+            "color": "text_secondary",
+            "padding": "xs sm",
+            "hover_background": "surface_light"
+          }
+        },
+  
+        "icons": {
+          "style": "outline_icons",
+          "sizes": {
+            "sm": "14px",
+            "base": "16px",
+            "lg": "20px",
+            "xl": "24px"
+          },
+          "color": "text_secondary",
+          "stroke_width": "1.5px"
+        },
+  
+        "badges": {
+          "style": "rounded_colored",
+          "padding": "2px 8px",
+          "border_radius": "full",
+          "typography": "xs medium",
+          "variants": {
+            "info": {
+              "background": "rgba(59, 130, 246, 0.1)",
+              "color": "accent_blue"
+            },
+            "success": {
+              "background": "rgba(16, 185, 129, 0.1)",
+              "color": "accent_green"
+            },
+            "warning": {
+              "background": "rgba(245, 158, 11, 0.1)",
+              "color": "accent_orange"
+            }
+          }
+        }
+      },
+  
+      "patterns": {
+        "information_hierarchy": {
+          "primary_content": "high_contrast_large_text",
+          "secondary_content": "medium_contrast_smaller_text",
+          "metadata": "low_contrast_small_text"
+        },
+        "interactive_states": {
+          "rest": "base_styling",
+          "hover": "subtle_background_change",
+          "active": "accent_color",
+          "focus": "border_highlight",
+          "disabled": "reduced_opacity"
+        },
+        "content_organization": {
+          "grouping": "whitespace_and_borders",
+          "separation": "subtle_borders",
+          "emphasis": "color_and_weight_changes"
+        }
+      },
+  
+      "responsive": {
+        "breakpoints": {
+          "mobile": "768px",
+          "tablet": "1024px",
+          "desktop": "1280px"
+        },
+        "sidebar": {
+          "mobile": "overlay_drawer",
+          "tablet": "collapsible",
+          "desktop": "fixed_sidebar"
+        }
+      },
+  
+      "accessibility": {
+        "contrast_ratio": "4.5:1_minimum",
+        "focus_indicators": "visible_outline",
+        "keyboard_navigation": "full_support",
+        "screen_reader": "semantic_markup"
+      },
+  
+      "brand_characteristics": {
+        "personality": "professional_clean_efficient",
+        "tone": "enterprise_friendly",
+        "visual_weight": "balanced_not_heavy",
+        "information_density": "medium_to_high"
+      }
+    }
+  }
