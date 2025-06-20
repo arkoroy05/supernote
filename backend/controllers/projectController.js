@@ -6,13 +6,7 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 import { MongoDBAtlasVectorSearch } from '@langchain/mongodb';
 import { collection } from '../config/db.js';
 
-/**
 
- * @param {Array} nodes - All nodes in the project.
- * @param {Array} edges - All edges in the project.
- * @param {String} startNodeId - The ID of the node to trace back from.
- * @returns {String} - An indented string representing the conversational context.
- */
 const buildHierarchicalContext = (nodes, edges, startNodeId) => {
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
@@ -34,11 +28,7 @@ const buildHierarchicalContext = (nodes, edges, startNodeId) => {
     return path.map((node, index) => `${'  '.repeat(index)}- ${node.data.label}`).join('\n');
 };
 
-/**
- * @desc    Create a new project with an initial graph structure.
- * @route   POST /api/project
- * @access  Protected
- */
+
 export const createProject = async (req, res) => {
 
     const { name, nodes, edges } = req.body;
@@ -63,11 +53,7 @@ export const createProject = async (req, res) => {
     }
 };
 
-/**
- * @desc    The core research loop: takes a prompt on a node and generates a new node.
- * @route   POST /api/project/:projectId/converse
- * @access  Protected
- */
+
 export const converseWithNode = async (req, res) => {
     const { parentNodeId, prompt, useRAG } = req.body;
     const { projectId } = req.params;
@@ -148,11 +134,7 @@ export const converseWithNode = async (req, res) => {
     }
 };
 
-/**
- * @desc    Generates a final, structured Markdown document from selected nodes.
- * @route   POST /api/project/:projectId/synthesize
- * @access  Protected
- */
+
 export const synthesizeDocument = async (req, res) => {
     const { selectedNodeIds } = req.body;
     const { projectId } = req.params;
@@ -182,11 +164,7 @@ export const synthesizeDocument = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get a single project by its ID.
- * @route   GET /api/project/:projectId
- * @access  Protected
- */
+
 export const getProjectById = async (req, res) => {
     try {
         const project = await Project.findOne({ _id: req.params.projectId, user: req.user.id });
@@ -200,16 +178,133 @@ export const getProjectById = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get all projects for the logged-in user.
- * @route   GET /api/project
- * @access  Protected
- */
+
 export const getUserProjects = async (req, res) => {
     try {
         const projects = await Project.find({ user: req.user.id }).sort({ createdAt: -1 });
         res.json(projects);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const rateIdeaState = async (req, res) => {
+    const { projectId } = req.params;
+    const { nodeIds } = req.body; 
+
+    try {
+        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        if (!project) return res.status(404).json({ message: 'Project not found.' });
+
+        const researchContext = nodeIds
+            .map(id => buildHierarchicalContext(project.nodes, project.edges, id))
+            .join('\n\n---\n\n');
+
+        const ratingPrompt = PromptTemplate.fromTemplate(
+            `You are a venture capitalist and startup incubator mentor. Based on the following research notes, critically assess the current state of the project idea.\n` +
+            `Provide a rating from 1-10 and a brief justification for each of the following metrics:\n` +
+            `1.  **Problem Severity:** How significant is the problem being solved?\n` +
+            `2.  **Solution Feasibility:** How feasible is the proposed solution technically and financially?\n` +
+            `3.  **Market Opportunity:** How large and accessible is the target market?\n` +
+            `4.  **Urgency (Why Now?):** Is there a compelling reason this idea needs to exist right now?\n\n` +
+            `Research Notes:\n---\n{notes}\n---\n\n` +
+            `Your Assessment:`
+        );
+
+        const ratingChain = ratingPrompt.pipe(chatModel).pipe(new StringOutputParser());
+        const rating = await ratingChain.invoke({ notes: researchContext });
+
+        res.status(200).json({ rating });
+    } catch (error) {
+        console.error('Error rating idea state:', error);
+        res.status(500).json({ message: 'Error rating idea.' });
+    }
+};
+
+export const generateValidationPitch = async (req, res) => {
+    const { projectId } = req.params;
+   
+    const { nodeIds, validationMetric } = req.body; 
+
+    if (!nodeIds || !validationMetric || nodeIds.length === 0) {
+        return res.status(400).json({ message: 'Node IDs and a validation metric are required.' });
+    }
+
+    try {
+      
+        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        if (!project) return res.status(404).json({ message: 'Project not found.' });
+
+      
+        const ideaSummary = nodeIds
+            .map(id => buildHierarchicalContext(project.nodes, project.edges, id))
+            .join('\n\n---\n\n');
+
+
+        const pitchPrompt = PromptTemplate.fromTemplate(
+            `You are a stealth marketing expert. Your goal is to validate a startup idea without revealing that you are building it. You will write a short post or message designed to be shared on a platform like Reddit, LinkedIn, or a specific forum to gauge real-world user reaction.\n\n` +
+            `Startup Idea Summary (based on research notes):\n{ideaSummary}\n\n` +
+            `The primary goal is to validate the following metric: **{validationMetric}**\n\n` +
+            `Instructions:\n` +
+            `1.  Do NOT sound like an advertisement.\n` +
+            `2.  Frame the post as a question, a personal story, or a search for a solution.\n` +
+            `3.  The post should be written to provoke comments and discussions that directly help validate the chosen metric.\n` +
+            `4.  Suggest the best online community or platform (e.g., 'a subreddit like r/Entrepreneur', 'a LinkedIn post targeting marketing managers') where this pitch should be posted.\n\n` +
+            `Write the stealth pitch now.`
+        );
+        
+        const pitchChain = pitchPrompt.pipe(chatModel).pipe(new StringOutputParser());
+        const pitch = await pitchChain.invoke({ 
+            ideaSummary, 
+            validationMetric 
+        });
+
+        res.status(200).json({ pitch });
+    } catch (error) {
+        console.error('Error generating validation pitch:', error);
+        res.status(500).json({ message: 'Error generating pitch.' });
+    }
+};
+
+export const regenerateNode = async (req, res) => {
+    const { projectId, nodeId } = req.params;
+    const { newPrompt } = req.body;
+
+    try {
+        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        if (!project) return res.status(404).json({ message: 'Project not found.' });
+        
+        const nodeToUpdate = project.nodes.find(n => n.id === nodeId);
+        if (!nodeToUpdate) return res.status(404).json({ message: 'Node not found.' });
+        
+        
+        const edge = project.edges.find(e => e.target === nodeId);
+        if (!edge) return res.status(400).json({ message: 'Cannot regenerate a root node this way.' });
+        
+        const parentNodeId = edge.source;
+        const conversation_history = buildHierarchicalContext(project.nodes, project.edges, parentNodeId);
+
+        const regenPrompt = PromptTemplate.fromTemplate(
+            `History: {conversation_history}\n\nQuestion: {question}\n\nAnswer:`
+        );
+        const chain = regenPrompt.pipe(chatModel).pipe(new StringOutputParser());
+        
+        const newContent = await chain.invoke({
+            question: newPrompt,
+            conversation_history: conversation_history,
+        });
+
+        nodeToUpdate.data.label = newContent;
+        nodeToUpdate.data.prompt = newPrompt; 
+        
+        await project.save();
+        
+        res.status(200).json(nodeToUpdate);
+
+        res.status(200).json({ message: 'Node regenerated successfully.' });
+
+    } catch (error) {
+        console.error('Error regenerating node:', error);
+        res.status(500).json({ message: 'Error regenerating node.' });
     }
 };
