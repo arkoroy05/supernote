@@ -4,7 +4,10 @@ import {
     getUserProjects,
     getProjectById,
     converseWithNode,
-    synthesizeDocument
+    synthesizeDocument,
+    rateIdeaState,
+    regenerateNode,
+    generateValidationPitch
 } from '../controllers/projectController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -26,5 +29,21 @@ router.route('/:projectId/converse')
 // Route for generating the final synthesized document
 router.route('/:projectId/synthesize')
     .post(protect, synthesizeDocument);
+
+// Route for AI to rate the current state of the idea
+router.route('/:projectId/rate')
+    .post(protect, rateIdeaState);
+
+// Route to regenerate a single node's content
+router.route('/:projectId/node/:nodeId/regenerate')
+    .put(protect, regenerateNode);
+
+// Route to generate a validation stealth pitch
+router.route('/:projectId/generate-pitch')
+    .post(protect, generateValidationPitch);
+
+router.route('/working').get((req, res) => {
+    res.status(200).json({ message: 'Project routes are working!' });
+});
 
 export default router;
