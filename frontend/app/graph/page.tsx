@@ -287,8 +287,8 @@ export default function GraphPage() {
         type: 'ideaNode',
         position: { x: 400, y: 200 },
         data: {
-            title: 'Project Strategy 2025',
-            description: 'Comprehensive planning and roadmap for our upcoming product launch, including market analysis, resource allocation, and timeline management.',
+            title: 'Building CreatorShield',
+            description: 'A decentralized platform for creators to protect, enforce, and monetize brand deals using smart contracts and automation — no lawyers or middlemen.',
             fullContent: 'This is the main strategic node that was created from the previous page. It contains all the initial planning data and serves as the starting point for our mindmapping exercise.',
         },
         };
