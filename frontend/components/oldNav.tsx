@@ -353,7 +353,7 @@ export default function GraphPage() {
     const [isEvaluateOpen, setIsEvaluateOpen] = useState(false);
 
     // Add evaluation state similar to the idea page
-    const [evaluations, setEvaluations] = useState({
+    const [evaluations] = useState({
         opportunity: { score: 9, revealed: true },
         problem: { score: 10, revealed: true },
         feasibility: { score: 6, revealed: true },
