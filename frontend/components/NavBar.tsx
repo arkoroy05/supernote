@@ -62,7 +62,7 @@ export default function Navbar({ className = "" }: NavbarProps) {
     const firstButtonLabel = getFirstButtonLabel();
 
     return (
-        <header className={`flex justify-between items-center px-6 py-6 backdrop-blur-sm bg-transparent ${className}`}>
+        <header className={`flex justify-between items-center px-6 py-3 backdrop-blur-sm bg-transparent ${className}`}>
             <div
                 onClick={() => window.location.href = '/'}
                 className="flex items-center text-2xl font-bold text-gray-900 cursor-pointer select-none"
