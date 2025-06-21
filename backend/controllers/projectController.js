@@ -2,7 +2,7 @@ import Project from '../models/projectModel.js';
 import { chatModel, embeddingModel } from '../services/aiService.js';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
-import { StringOutputParser } from '@langchain/core/output_parsers';
+import { StringOutputParser, JsonOutputParser } from '@langchain/core/output_parsers';
 import { MongoDBAtlasVectorSearch } from '@langchain/mongodb';
 import { collection } from '../config/db.js';
 

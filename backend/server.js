@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import ideaRoutes from './routes/ideaRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
+import stealthRoutes from './routes/stealthRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 import listEndpoints from 'express-list-endpoints';
 
@@ -29,6 +30,7 @@ app.get('/api', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/idea', ideaRoutes);
 app.use('/api/project', projectRoutes);
+app.use('/api/stealth', stealthRoutes);
 app.use('/api/documents', documentRoutes);
 
 console.log('\nRegistered routes:\n', listEndpoints(app), '\n');

@@ -12,6 +12,11 @@ const stealthPitchSchema = new mongoose.Schema({
     required: true,
     default: "Untitled Stealth Pitch",
   },
+  pitch: {
+    type: String,
+    required: true,
+    default: "sample pitch data",
+  },
   amount: {
     type: Number,
     required: false,
