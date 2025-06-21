@@ -1,65 +1,96 @@
-"use client"
+import React from 'react';
+import { ArrowRight, Lightbulb, Target, TrendingUp } from 'lucide-react';
 
-import { useState } from "react"
-import DynamicFrameLayout from "@/components/DynamicFrameLayout"
-import { ppEditorialNewUltralightItalic, inter} from "@/app/fonts"
-import Link from "next/link"
+interface AnalysisData {
+  analysis: string;
+  variations: string[];
+}
 
-export default function Home() {
-  const [headerSize] = useState(1.2) // 120% is the default size
-  const [textSize] = useState(0.8) // 80% is the default size
+interface IdeaAnalysisPageProps {
+  data?: AnalysisData;
+}
+
+const IdeaAnalysisPage: React.FC<IdeaAnalysisPageProps> = ({ data }) => {
+  const handleVariationClick = (): void => {
+    window.location.href = '/graph';
+  };
 
   return (
-    <div
-      className={`min-h-screen bg-[#141414] flex items-center justify-center p-8 ${ppEditorialNewUltralightItalic.variable} ${inter.variable}`}
-    >
-      <div className="w-full h-full flex flex-col md:flex-row items-start gap-8 md:gap-8">
-        {/* Left Content */}
-        <div className="w-full md:w-[260px] flex-shrink-0 flex flex-col justify-between h-full">
-          <div className="flex flex-col gap-16">
-            <h1
-              className={`${ppEditorialNewUltralightItalic.className} text-4xl md:text-6xl font-light italic text-white/80 tracking-tighter leading-[130%]`}
-              style={{ fontSize: `${4 * headerSize}rem` }}
-            >
-              Prompt
-              <br />
-              variations
-            </h1>
-            <div
-              className={`${inter.className} flex flex-col gap-12 text-white/50 text-sm font-light max-w-[300px]`}
-              style={{ fontSize: `${0.875 * textSize}rem` }}
-            >
-              <div className="space-y-6">
-                <div className="h-px bg-white/10 w-full" />
-                <button className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white/80 rounded-lg transition-colors">
-                  Proceed
-                </button>
-                <div className="h-px bg-white/10 w-full" />
-              </div>
-            </div>
-            <Link
-              href="https://lumalabs.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-8 h-8 relative opacity-80 hover:opacity-100 transition-opacity"
-            >
-            </Link>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-full mb-4">
+            <Target className="w-8 h-8 text-white" />
           </div>
-          <a
-            href="https://lumalabs.ai/join?role=5d274587-f8fd-4f53-a5b6-8f85d586e1aa"
-            className="inline-block px-6 py-3 text-white/70 border border-white/20 rounded-full font-medium hover:bg-white/5 transition-colors text-center w-full max-w-[260px] text-sm mt-16"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Apply
-          </a>
+          <h1 className="text-4xl font-bold text-black mb-4">Idea Analysis</h1>
+          <div className="w-24 h-1 bg-blue-500 mx-auto rounded-full"></div>
         </div>
 
-        {/* Right Content */}
-        <div className="w-full md:flex-grow h-[60vh] md:h-[80vh]">
-          <DynamicFrameLayout />
+        {/* Analysis Section */}
+        <div className="mb-16">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mr-4">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-black">Strategic Analysis</h2>
+            </div>
+            <div className="prose prose-lg max-w-none">
+              {data?.analysis?.split('\n\n').map((paragraph: string, index: number) => (
+                <p key={index} className="text-black leading-relaxed mb-4 text-lg">
+                  {paragraph}
+                </p>
+              )) || <p className="text-black text-lg">No analysis available</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Variations Section */}
+        <div>
+          <div className="flex items-center justify-center mb-8">
+            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mr-4">
+              <Lightbulb className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold text-black">Idea Variations</h2>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {data?.variations?.map((variation: string, index: number) => (
+              <div
+                key={index}
+                onClick={handleVariationClick}
+                className="bg-white rounded-2xl shadow-lg p-6 border border-blue-100 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:border-blue-300 group"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                      <span className="text-white font-bold text-sm">{index + 1}</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-black">
+                      Variation {index + 1}
+                    </h3>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-blue-500 transform transition-transform group-hover:translate-x-1" />
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-blue-100">
+                  <span className="text-blue-600 font-medium text-sm group-hover:text-blue-700 transition-colors">
+                    Explore this variation →
+                  </span>
+                </div>
+              </div>
+            )) || <p className="text-black text-center col-span-full">No variations available</p>}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-16 text-center">
+          <div className="w-16 h-1 bg-blue-500 mx-auto rounded-full"></div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default IdeaAnalysisPage;
