@@ -18,8 +18,6 @@ export function Providers({ children, initialState }: Props) {
     const [config] = useState(() => getConfig());
     const [queryClient] = useState(() => new QueryClient());
 
-    console.log(process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID);
-
     return (
         <CivicAuthProvider
             clientId={process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID!}

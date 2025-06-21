@@ -41,7 +41,7 @@ const buildHierarchicalContext = (nodes, edges, startNodeId) => {
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
     const parentMap = new Map(edges.map(e => [e.target, e.source]));
-    
+
     const path = [];
     let currentNodeId = startNodeId;
 
@@ -49,12 +49,12 @@ const buildHierarchicalContext = (nodes, edges, startNodeId) => {
     while (currentNodeId) {
         const node = nodeMap.get(currentNodeId);
         if (node) {
-            path.unshift(node); 
+            path.unshift(node);
         }
         currentNodeId = parentMap.get(currentNodeId);
     }
 
-   
+
     return path.map((node, index) => `${'  '.repeat(index)}- ${node.data.label}`).join('\n');
 };
 
@@ -76,16 +76,16 @@ export const createProject = async (req, res) => {
             nodes,
             edges
         });
-        
+
         const initialContext = buildFullGraphContext(nodes, edges);
 
-        
+
         const opportunityPrompt = PromptTemplate.fromTemplate(
             `Based on this initial startup idea, analyze the market and identify a key opportunity. Provide your response ONLY as a valid JSON object with keys: "id", "type", "market", "target", "main_competitors", "trendAnalysis".Please write max 2-3 words per key, 1 word per key is preferred .\n\nIdea:\n{context}`
         );
         const opportunityChain = opportunityPrompt.pipe(chatModel).pipe(new JsonOutputParser());
         const opportunityData = await opportunityChain.invoke({ context: initialContext });
-        
+
         project.categorization = opportunityData;
 
         const createdProject = await project.save();
@@ -129,23 +129,23 @@ export const converseWithNode = async (req, res) => {
             `Your Answer:`
         );
 
-        
+
         const chain = RunnableSequence.from([
             {
                 question: (input) => input.question,
                 conversation_history: (input) => input.conversation_history,
                 context: async (input) => {
                     if (!useRAG) return "No documents requested.";
-                    
+
                     const vectorStore = new MongoDBAtlasVectorSearch(embeddingModel, {
-                        collection: collection('vectors'), 
+                        collection: collection('vectors'),
                         indexName: "default",
                     });
-                    
+
                     const retriever = vectorStore.asRetriever({
                         filter: { preFilter: { userId: input.userId } }
                     });
-                    
+
                     const docs = await retriever.getRelevantDocuments(input.question);
                     return docs.map(doc => doc.pageContent).join('\n---\n');
                 }
@@ -155,35 +155,35 @@ export const converseWithNode = async (req, res) => {
             new StringOutputParser(),
         ]);
 
-  
+
         const result = await chain.invoke({
             question: prompt,
             conversation_history: conversation_history,
             userId: req.user.id
         });
 
-       
+
         const newNode = {
             id: `node_${Date.now()}`,
             data: { label: result, prompt: prompt },
-            position: position,       
-            title: title || '',       
+            position: position,
+            title: title || '',
         };
 
         const newEdge = {
             id: `edge_${parentNodeId}-${newNode.id}`,
             source: parentNodeId,
-      target: newNode.id,
+            target: newNode.id,
         };
 
-        
+
         project.nodes.push(newNode);
         project.edges.push(newEdge);
         await project.save();
 
-       
+
         res.status(201).json({ newNode, newEdge });
-        
+
     } catch (error) {
         console.error('Error during conversation:', error);
         res.status(500).json({ message: 'Server error during conversation.' });
@@ -193,7 +193,7 @@ export const converseWithNode = async (req, res) => {
 
 export const synthesizeDocument = async (req, res) => {
     const { projectId } = req.params;
-    
+
 
     try {
         const project = await Project.findOne({ _id: projectId, user: req.user.id });
@@ -201,7 +201,7 @@ export const synthesizeDocument = async (req, res) => {
             return res.status(404).json({ message: 'Project not found.' });
         }
 
-        
+
         const synthesisContext = buildFullGraphContext(project.nodes, project.edges);
 
         if (!synthesisContext) {
@@ -227,8 +227,12 @@ export const synthesizeDocument = async (req, res) => {
 
 
 export const getProjectById = async (req, res) => {
+    console.log('hello');
     try {
-        const project = await Project.findOne({ _id: req.params.projectId, user: req.user.id });
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+
+        const project = await Project.findOne({ _id: req.params.projectId, user: userId });
         if (project) {
             res.json(project);
         } else {
@@ -284,19 +288,19 @@ export const updateProjectRating = async (req, res) => {
 
 export const generateValidationPitch = async (req, res) => {
     const { projectId } = req.params;
-   
-    const { nodeIds, validationMetric } = req.body; 
+
+    const { nodeIds, validationMetric } = req.body;
 
     if (!nodeIds || !validationMetric || nodeIds.length === 0) {
         return res.status(400).json({ message: 'Node IDs and a validation metric are required.' });
     }
 
     try {
-      
+
         const project = await Project.findOne({ _id: projectId, user: req.user.id });
         if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-      
+
         const ideaSummary = nodeIds
             .map(id => buildHierarchicalContext(project.nodes, project.edges, id))
             .join('\n\n---\n\n');
@@ -313,11 +317,11 @@ export const generateValidationPitch = async (req, res) => {
             `4.  Suggest the best online community or platform (e.g., 'a subreddit like r/Entrepreneur', 'a LinkedIn post targeting marketing managers') where this pitch should be posted.\n\n` +
             `Write the stealth pitch now.`
         );
-        
+
         const pitchChain = pitchPrompt.pipe(chatModel).pipe(new StringOutputParser());
-        const pitch = await pitchChain.invoke({ 
-            ideaSummary, 
-            validationMetric 
+        const pitch = await pitchChain.invoke({
+            ideaSummary,
+            validationMetric
         });
 
         res.status(200).json({ pitch });
@@ -334,14 +338,14 @@ export const regenerateNode = async (req, res) => {
     try {
         const project = await Project.findOne({ _id: projectId, user: req.user.id });
         if (!project) return res.status(404).json({ message: 'Project not found.' });
-        
+
         const nodeToUpdate = project.nodes.find(n => n.id === nodeId);
         if (!nodeToUpdate) return res.status(404).json({ message: 'Node not found.' });
-        
-        
+
+
         const edge = project.edges.find(e => e.target === nodeId);
         if (!edge) return res.status(400).json({ message: 'Cannot regenerate a root node this way.' });
-        
+
         const parentNodeId = edge.source;
         const conversation_history = buildHierarchicalContext(project.nodes, project.edges, parentNodeId);
 
@@ -349,17 +353,17 @@ export const regenerateNode = async (req, res) => {
             `History: {conversation_history}\n\nQuestion: {question}\n\nAnswer:`
         );
         const chain = regenPrompt.pipe(chatModel).pipe(new StringOutputParser());
-        
+
         const newContent = await chain.invoke({
             question: newPrompt,
             conversation_history: conversation_history,
         });
 
         nodeToUpdate.data.label = newContent;
-        nodeToUpdate.data.prompt = newPrompt; 
-        
+        nodeToUpdate.data.prompt = newPrompt;
+
         await project.save();
-        
+
         res.status(200).json(nodeToUpdate);
 
         res.status(200).json({ message: 'Node regenerated successfully.' });
@@ -377,17 +381,17 @@ export const deleteNode = async (req, res) => {
         if (!project) return res.status(404).json({ message: 'Project not found' });
 
         const initialNodeCount = project.nodes.length;
-        
+
 
         project.nodes = project.nodes.filter(node => node.id !== nodeId);
-        
+
 
         project.edges = project.edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId);
 
         if (project.nodes.length === initialNodeCount) {
             return res.status(404).json({ message: 'Node ID not found in project' });
         }
-        
+
         const updatedProject = await project.save();
         res.status(200).json(updatedProject);
 
@@ -424,7 +428,7 @@ export const updateNodePositions = async (req, res) => {
                 nodeToUpdate.position.y = update.position.y;
             }
         }
-        
+
         const updatedProject = await project.save();
         res.status(200).json(updatedProject);
 

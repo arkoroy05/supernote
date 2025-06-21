@@ -93,12 +93,9 @@ const IdeaAnalysisPage: React.FC = () => {
         try {
             const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project`, project, { withCredentials: true });
             if (response?.data) {
-                // localStorage.setItem('ideaAnalysisData', JSON.stringify(response.data));
-                console.log(response.data);
+                window.location.href = `/graph/${response.data._id}`;
             }
             setLoading(false);
-            // push to /graph with project id
-            // window.location.href = '/graph';
         }
         catch (error: unknown) {
             const errorData = error instanceof Error

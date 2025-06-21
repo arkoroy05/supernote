@@ -35,6 +35,8 @@ import {
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { use } from 'react';
 
 // Extend Window interface to include our custom properties
 declare global {
@@ -177,7 +179,7 @@ const CreateNodeModal: React.FC<{
             }, 1500);
         }
     };
-    
+
     const handleSelectIdeaItem = (title: string) => {
         onCreateManual(title, "some basic description about the title " + title);
         handleClose();
@@ -283,7 +285,10 @@ const nodeTypes = {
     ),
 };
 
-export default function GraphPage() {
+export default function GraphPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id: projectId } = use(params);
+    // console.log("Project ID:", projectId);
+
     const router = useRouter();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -315,6 +320,51 @@ export default function GraphPage() {
         [router]
     );
 
+    const loadProject = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}`, { withCredentials: true });
+            if (response?.data) {
+                // localStorage.setItem('ideaAnalysisData', JSON.stringify(response.data));
+                // console.log(response.data);
+                setNodes(response.data.nodes.map((snode: any) => {
+                    return {
+                        id: snode.id,
+                        type: "ideaNode",
+                        position: { x: snode.position.x + 0, y: snode.position.y },
+                        data: {
+                            title: snode.title,
+                            description: snode.data.label,
+                            fullContent: 'empty content full',
+                        },
+                    } as Node<NodeData>
+                }));
+                setEdges(response.data.edges.map((sedge: any) => {
+                    return {
+                        id: sedge.id,
+                        source: sedge.source,
+                        target: sedge.target,
+                        // type: "bezier",
+                        animated: false,
+                        style: { stroke: "#3b82f6", strokeWidth: 2 },
+                    } as Edge;
+                }));
+            }
+            setIsLoading(false);
+            // push to /graph with project id
+            // window.location.href = '/graph';
+        }
+        catch (error: unknown) {
+            const errorData = error instanceof Error
+                ? { message: error.message }
+                : axios.isAxiosError(error) && error.response
+                    ? error.response.data
+                    : { message: 'An unknown error occurred' };
+            console.log(JSON.stringify(errorData, null, 2));
+            setIsLoading(false);
+        }
+    }, [projectId]);
+
     // Set global handlers for the node component
     useEffect(() => {
         window.__handleCreateNode = handleCreateNode;
@@ -325,6 +375,10 @@ export default function GraphPage() {
             delete window.__handleNodeClick;
         };
     }, [handleCreateNode, handleNodeClick]);
+
+    useEffect(() => {
+        loadProject();
+    }, [loadProject]);
 
     // Simulate fetching initial node from API
     const fetchInitialNode = useCallback(async () => {
@@ -440,10 +494,10 @@ export default function GraphPage() {
         [setEdges]
     );
 
-    // Fetch initial node on mount
-    useEffect(() => {
-        fetchInitialNode();
-    }, [fetchInitialNode]);
+    // // Fetch initial node on mount
+    // useEffect(() => {
+    //     fetchInitialNode();
+    // }, [fetchInitialNode]);
 
     return (
         <div className="w-full h-screen bg-gray-50">
