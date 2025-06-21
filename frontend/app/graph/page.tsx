@@ -19,7 +19,6 @@ import {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import {
-
     X,
     ChevronRight,
     WandSparkles,
@@ -32,9 +31,23 @@ import {
     Cpu,
     Sparkles,
     ShieldAlert,
+    Check,
+    Info,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useIdeaAccelerator } from "@/app/hooks";
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants";
+import { type Abi } from 'viem';
+import { useAccount } from "wagmi";
+import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 // Extend Window interface to include our custom properties
 declare global {
@@ -57,26 +70,12 @@ interface IconProps {
     size?: number;
 }
 
-// Remove the unused IdeaItem component
-// const IdeaItem = ({
-//     title,
-//     icon: Icon,
-//     onClick,
-// }: {
-//     title: string;
-//     icon: React.FC<IconProps>;
-//     onClick: () => void;
-// }) => {
-//     return (
-//         <button
-//             onClick={onClick}
-//             className="w-full p-2 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left flex items-center space-x-3"
-//         >
-//             <Icon className="w-5 h-5 text-blue-500" />
-//             <h3 className="font-medium text-gray-900">{title}</h3>
-//         </button>
-//     );
-// };
+type ValidateAttribute = "userFlow" | "marketGap" | "usability" | "optimalSeo" | "monetization" | "scalability" | "technicalComplexity" | "differentiation" | "adoptionBarriers"
+
+interface AttributeState {
+  validated: boolean
+  enabled: boolean
+}
 
 type IdeaType = { title: string; icon: React.FC<IconProps> };
 const ideaTypes: IdeaType[] = [
@@ -292,6 +291,75 @@ export default function GraphPage() {
     const [selectedParentId, setSelectedParentId] = useState<string>("");
     const [selectedParentTitle, setSelectedParentTitle] = useState<string>("");
 
+    // Web3 related state
+    const [showGrantRequest, setShowGrantRequest] = useState(false);
+    const [grantAmount, setGrantAmount] = useState("");
+    const [metadataURI, setMetadataURI] = useState("");
+    const [aiSuggestion, setAiSuggestion] = useState("");
+    
+    // Validate section state
+    const [validateAttributes, setValidateAttributes] = useState<Record<ValidateAttribute, AttributeState>>({
+        userFlow: { validated: false, enabled: true },
+        marketGap: { validated: false, enabled: false },
+        usability: { validated: false, enabled: false },
+        optimalSeo: { validated: false, enabled: false },
+        monetization: { validated: false, enabled: false },
+        scalability: { validated: false, enabled: false },
+        technicalComplexity: { validated: false, enabled: false },
+        differentiation: { validated: false, enabled: false },
+        adoptionBarriers: { validated: false, enabled: false },
+    });
+    
+    // Store results for each attribute
+    const [resultsMap, setResultsMap] = useState<Record<ValidateAttribute, string>>({
+        userFlow: "",
+        marketGap: "",
+        usability: "",
+        optimalSeo: "",
+        monetization: "",
+        scalability: "",
+        technicalComplexity: "",
+        differentiation: "",
+        adoptionBarriers: "",
+    });
+    
+    // For showing result popups
+    const [showResultsPopup, setShowResultsPopup] = useState(false);
+    const [currentViewingAttribute, setCurrentViewingAttribute] = useState<ValidateAttribute | null>(null);
+    
+    // Web3 hooks
+    const {
+        useIsStaker,
+        useRequestGrant,
+    } = useIdeaAccelerator({
+        contractAddress: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI as Abi,
+    });
+
+    const { data: isStaker } = useIsStaker();
+    
+    const {
+        requestGrant,
+        isPending,
+        isConfirming,
+        error
+    } = useRequestGrant();
+
+    // Get wallet connection status
+    const { isConnected } = useAccount();
+
+    // State for collapsible sections
+    const [isIdeateOpen, setIsIdeateOpen] = useState(false);
+    const [isEvaluateOpen, setIsEvaluateOpen] = useState(false);
+
+    // Add evaluation state similar to the idea page
+    const [evaluations, setEvaluations] = useState({
+        opportunity: { score: 9, revealed: true },
+        problem: { score: 10, revealed: true },
+        feasibility: { score: 6, revealed: true },
+        whyNow: { score: 9, revealed: true },
+    });
+
     // Handle creating new nodes
     const handleCreateNode = useCallback(
         (parentId: string) => {
@@ -444,6 +512,53 @@ export default function GraphPage() {
     useEffect(() => {
         fetchInitialNode();
     }, [fetchInitialNode]);
+    
+    // Handle clicking on a validated attribute
+    const handleValidatedAttributeClick = (attribute: ValidateAttribute) => {
+        if (validateAttributes[attribute].validated) {
+            setCurrentViewingAttribute(attribute);
+            setShowResultsPopup(true);
+        }
+    };
+    
+    // Handle validation results from ideation process
+    const handleIdeateValidate = (resultsText: string) => {
+        // For demo purposes, let's validate the userFlow attribute
+        const validateKey = "userFlow";
+        
+        // Update validation status
+        setValidateAttributes((prev) => ({
+            ...prev,
+            [validateKey]: { validated: true, enabled: true },
+        }));
+        
+        // Save the results text
+        setResultsMap((prev) => ({
+            ...prev,
+            [validateKey]: resultsText || "This is a validated user flow for your idea. It shows how users will interact with your platform and the key touchpoints in their journey.",
+        }));
+        
+        // Set an AI suggestion
+        setAiSuggestion("Consider adding a guided onboarding process to help new users understand the value proposition immediately. This could increase conversion rates by an estimated 30% based on similar platforms.");
+    };
+    
+    // Handle grant request
+    const handleGrantRequest = () => {
+        if (!grantAmount || !metadataURI) return;
+        requestGrant(metadataURI, grantAmount);
+    };
+
+    const isLoading_grant = isPending || isConfirming;
+    
+    // Simulate validation on component mount for demo
+    useEffect(() => {
+        // After initial node loads, simulate a validation for demo purposes
+        if (!isLoading) {
+            setTimeout(() => {
+                handleIdeateValidate("This idea has a clear user flow that guides both homeowners and contractors through the escrow process with clear milestones and verification points.");
+            }, 2000);
+        }
+    }, [isLoading]);
 
     return (
         <div className="w-full h-screen bg-gray-50">
@@ -471,35 +586,202 @@ export default function GraphPage() {
                 </div>
             ) : (
                 <>
-                    {/* React Flow */}
-                    <div className="pt-20 h-full">
-                        <ReactFlow
-                            nodes={nodes}
-                            edges={edges}
-                            onNodesChange={onNodesChange}
-                            onEdgesChange={onEdgesChange}
-                            onConnect={onConnect}
-                            nodeTypes={nodeTypes}
-                            fitView
-                            attributionPosition="bottom-left"
-                            className="bg-gray-50"
-                            defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
-                            minZoom={0.3}
-                            maxZoom={2}
-                        >
-                            <Controls className="bg-white shadow-lg rounded-lg" />
-                            <MiniMap
-                                className="bg-white rounded-lg shadow-lg"
-                                nodeColor="#3b82f6"
-                                maskColor="rgba(0, 0, 0, 0.1)"
-                            />
-                            <Background
-                                variant={BackgroundVariant.Dots}
-                                gap={20}
-                                size={1}
-                                color="#e5e7eb"
-                            />
-                        </ReactFlow>
+                    {/* React Flow with right side panel */}
+                    <div className="pt-20 h-full flex">
+                        {/* Left side: React Flow */}
+                        <div className="flex-grow h-full">
+                            <ReactFlow
+                                nodes={nodes}
+                                edges={edges}
+                                onNodesChange={onNodesChange}
+                                onEdgesChange={onEdgesChange}
+                                onConnect={onConnect}
+                                nodeTypes={nodeTypes}
+                                fitView
+                                attributionPosition="bottom-left"
+                                className="bg-gray-50"
+                                defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
+                                minZoom={0.3}
+                                maxZoom={2}
+                            >
+                                <Controls className="bg-white shadow-lg rounded-lg" />
+                                <MiniMap
+                                    className="bg-white rounded-lg shadow-lg"
+                                    nodeColor="#3b82f6"
+                                    maskColor="rgba(0, 0, 0, 0.1)"
+                                />
+                                <Background
+                                    variant={BackgroundVariant.Dots}
+                                    gap={20}
+                                    size={1}
+                                    color="#e5e7eb"
+                                />
+                            </ReactFlow>
+                        </div>
+                        
+                        {/* Right side: Collapsible panels */}
+                        <div className="w-72 bg-white border-l border-gray-200 overflow-y-auto flex flex-col">
+                            {/* Ideate Collapsible */}
+                            <Collapsible 
+                                open={isIdeateOpen} 
+                                onOpenChange={setIsIdeateOpen}
+                                className="border-b border-gray-200"
+                            >
+                                <CollapsibleTrigger asChild>
+                                    <Button 
+                                        variant="ghost" 
+                                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50"
+                                    >
+                                        <div className="flex items-center">
+                                            <WandSparkles className="w-5 h-5 mr-2 text-purple-600" />
+                                            <span className="font-semibold text-gray-900">Ideate</span>
+                                        </div>
+                                        {isIdeateOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                    </Button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="px-4 pb-4">
+                                    <div className="space-y-2">
+                                        {/* Validate Options */}
+                                        {[
+                                            { key: "userFlow" as ValidateAttribute, label: "User Flow" },
+                                            { key: "marketGap" as ValidateAttribute, label: "Market Gap" },
+                                            { key: "usability" as ValidateAttribute, label: "Usability" },
+                                            { key: "optimalSeo" as ValidateAttribute, label: "Optimal SEO" },
+                                            { key: "monetization" as ValidateAttribute, label: "Monetization" },
+                                            { key: "scalability" as ValidateAttribute, label: "Scalability" },
+                                            { key: "technicalComplexity" as ValidateAttribute, label: "Technical Complexity" },
+                                            { key: "differentiation" as ValidateAttribute, label: "Differentiation" },
+                                            { key: "adoptionBarriers" as ValidateAttribute, label: "Adoption Barriers" },
+                                        ].map(({ key, label }) => (
+                                            <Button
+                                                key={key}
+                                                variant="outline"
+                                                disabled={!validateAttributes[key].enabled}
+                                                onClick={() => handleValidatedAttributeClick(key)}
+                                                className={`w-full justify-start h-12 ${
+                                                    validateAttributes[key].validated
+                                                        ? "bg-green-50 border-green-200 text-green-800 hover:bg-green-100"
+                                                        : validateAttributes[key].enabled
+                                                            ? "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                                                            : "bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed"
+                                                }`}
+                                            >
+                                                {validateAttributes[key].validated && <Check className="w-4 h-4 mr-2" />}
+                                                {label}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </CollapsibleContent>
+                            </Collapsible>
+                            
+                            {/* Evaluate Collapsible */}
+                            <Collapsible 
+                                open={isEvaluateOpen} 
+                                onOpenChange={setIsEvaluateOpen}
+                            >
+                                <CollapsibleTrigger asChild>
+                                    <Button 
+                                        variant="ghost" 
+                                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50"
+                                    >
+                                        <div className="flex items-center">
+                                            <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+                                            <span className="font-semibold text-gray-900">Evaluate</span>
+                                        </div>
+                                        {isEvaluateOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                    </Button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="p-4">
+                                    <div className="space-y-3">
+                                        {/* Opportunity Card */}
+                                        <Card className="bg-green-50 border-0 shadow-sm cursor-pointer hover:shadow-md">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="font-medium text-gray-700">Opportunity</h3>
+                                                    <Info className="w-4 h-4 text-gray-500" />
+                                                </div>
+                                                <div className="text-3xl font-bold text-gray-800">{evaluations.opportunity.score}</div>
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                    {evaluations.opportunity.score >= 9 ? "Exceptional" : 
+                                                    evaluations.opportunity.score >= 7 ? "Strong" : 
+                                                    evaluations.opportunity.score >= 5 ? "Moderate" : "Limited"}
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                    <div className="bg-green-600 h-1.5 rounded-full" style={{ width: `${evaluations.opportunity.score * 10}%` }}></div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                        
+                                        {/* Problem Card */}
+                                        <Card className="bg-red-50 border-0 shadow-sm cursor-pointer hover:shadow-md">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="font-medium text-gray-700">Problem</h3>
+                                                    <Info className="w-4 h-4 text-gray-500" />
+                                                </div>
+                                                <div className="text-3xl font-bold text-gray-800">{evaluations.problem.score}</div>
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                    {evaluations.problem.score >= 9 ? "Severe Pain" : 
+                                                    evaluations.problem.score >= 7 ? "Significant Issue" : 
+                                                    evaluations.problem.score >= 5 ? "Moderate Issue" : "Minor Issue"}
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                    <div className="bg-red-600 h-1.5 rounded-full" style={{ width: `${evaluations.problem.score * 10}%` }}></div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                        
+                                        {/* Feasibility Card */}
+                                        <Card className="bg-blue-50 border-0 shadow-sm cursor-pointer hover:shadow-md">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="font-medium text-gray-700">Feasibility</h3>
+                                                    <Info className="w-4 h-4 text-gray-500" />
+                                                </div>
+                                                <div className="text-3xl font-bold text-gray-800">{evaluations.feasibility.score}</div>
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                    {evaluations.feasibility.score >= 9 ? "Very Doable" : 
+                                                    evaluations.feasibility.score >= 7 ? "Achievable" : 
+                                                    evaluations.feasibility.score >= 5 ? "Challenging" : "Difficult"}
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                    <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${evaluations.feasibility.score * 10}%` }}></div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                        
+                                        {/* Why Now Card */}
+                                        <Card className="bg-orange-50 border-0 shadow-sm cursor-pointer hover:shadow-md">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="font-medium text-gray-700">Why Now</h3>
+                                                    <Info className="w-4 h-4 text-gray-500" />
+                                                </div>
+                                                <div className="text-3xl font-bold text-gray-800">{evaluations.whyNow.score}</div>
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                    {evaluations.whyNow.score >= 9 ? "Perfect Timing" : 
+                                                    evaluations.whyNow.score >= 7 ? "Good Time" : 
+                                                    evaluations.whyNow.score >= 5 ? "Acceptable" : "Better Wait"}
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                    <div className="bg-orange-600 h-1.5 rounded-full" style={{ width: `${evaluations.whyNow.score * 10}%` }}></div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </CollapsibleContent>
+                            </Collapsible>
+                            
+                            {/* Help Info */}
+                            <div className="p-4 bg-blue-50 mt-auto border-t border-blue-100">
+                                <div className="flex items-start">
+                                    <Info className="w-5 h-5 text-blue-500 mr-2 mt-0.5" />
+                                    <p className="text-xs text-blue-700">
+                                        Click on the buttons above to expand sections and interact with your idea.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Instructions */}
@@ -524,6 +806,142 @@ export default function GraphPage() {
                     />
                 </>
             )}
+            
+            {/* Results Popup */}
+            <Dialog open={showResultsPopup} onOpenChange={setShowResultsPopup}>
+                <DialogContent className="bg-white border border-gray-200 max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-gray-900">
+                            {currentViewingAttribute && currentViewingAttribute.charAt(0).toUpperCase() + currentViewingAttribute.slice(1).replace(/([A-Z])/g, ' $1')}
+                        </DialogTitle>
+                    </DialogHeader>
+                    
+                    {/* Stealth Pitch Section */}
+                    <div className="mt-4">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Stealth Pitch</h3>
+                        <p className="text-gray-700 leading-relaxed">
+                            {currentViewingAttribute ? resultsMap[currentViewingAttribute] : "No results available"}
+                        </p>
+                    </div>
+
+                    {/* AI Suggestion Section */}
+                    <div className="mt-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">AI</span>
+                            <h3 className="text-lg font-semibold text-gray-800">Suggestion</h3>
+                        </div>
+                        <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
+                            <p className="text-gray-700 min-h-[120px] whitespace-pre-wrap">
+                                {aiSuggestion || "AI suggestions will appear here..."}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="mt-6 flex justify-end gap-3">
+                        <Button 
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 text-base font-semibold rounded-lg"
+                            onClick={() => {
+                                setShowGrantRequest(true)
+                                setShowResultsPopup(false)
+                            }}
+                        >
+                            Ask for Grant and Pitch
+                        </Button>
+                        <Button 
+                            className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-2 text-base font-semibold rounded-lg"
+                            onClick={() => {
+                                setShowResultsPopup(false)
+                            }}
+                        >
+                            Stealth Pitch Only
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+            
+            {/* Grant Request Modal */}
+            <Dialog open={showGrantRequest} onOpenChange={setShowGrantRequest}>
+                <DialogContent className="bg-white border border-gray-200 max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-gray-900">Request Grant</DialogTitle>
+                    </DialogHeader>
+                    
+                    {!isConnected ? (
+                        <div className="py-6 space-y-4">
+                            <div className="text-center">
+                                <p className="text-gray-700 mb-2">Please connect your wallet from the main navigation</p>
+                                <p className="text-red-500 text-sm">You need to connect your wallet and stake at least 0.5 ETH to request grants</p>
+                            </div>
+                            <div className="flex justify-center">
+                                <Button
+                                    onClick={() => setShowGrantRequest(false)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    ) : !isStaker ? (
+                        <div className="py-6 space-y-4">
+                            <div className="text-center">
+                                <p className="text-gray-700 mb-2">Your wallet is connected, but you need to stake first</p>
+                                <p className="text-red-500 text-sm">Stake at least 0.5 ETH to request grants</p>
+                            </div>
+                            <div className="flex justify-center">
+                                <Button
+                                    onClick={() => setShowGrantRequest(false)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    Go to Staking Page
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Amount in ETH"
+                                    value={grantAmount}
+                                    onChange={(e) => setGrantAmount(e.target.value)}
+                                    min="0.1"
+                                    step="0.1"
+                                />
+                                <Textarea
+                                    placeholder="IPFS URI or metadata link containing project details"
+                                    value={metadataURI}
+                                    onChange={(e) => setMetadataURI(e.target.value)}
+                                    className="min-h-[120px]"
+                                />
+                            </div>
+
+                            {error && (
+                                <div className="text-sm text-red-500">
+                                    {error.message}
+                                </div>
+                            )}
+                            
+                            <div className="flex flex-col gap-3">
+                                <Button
+                                    onClick={handleGrantRequest}
+                                    disabled={isLoading_grant || !grantAmount || !metadataURI}
+                                    className="w-full bg-blue-600 hover:bg-blue-700"
+                                >
+                                    {isLoading_grant ? "Submitting..." : "Submit Grant Request"}
+                                </Button>
+                                <Button
+                                    onClick={() => setShowGrantRequest(false)}
+                                    variant="outline"
+                                    className="w-full"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
