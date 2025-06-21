@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Check, Info, Pencil, Sparkles, User, Lightbulb, Target, ArrowUp, ArrowLeft, BrainCircuit } from "lucide-react"
-import axios from "axios";
+import axios from "axios"
+import ReactMarkdown from "react-markdown"
 import { Node } from "reactflow" // Import Node type
 
 // Frontend Node Data Type
@@ -183,11 +184,34 @@ export default function IdeaDetailPage() {
                                     {isEditingDescription ? <Check className="w-6 h-6" /> : <Pencil className="w-5 h-5" />}
                                 </Button>
                             </div>
-                            <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                            <div className="text-gray-700 leading-relaxed">
                                 {isEditingDescription ? (
-                                    <Textarea value={ideaDescription} onChange={(e) => setIdeaDescription(e.target.value)} className="h-96 w-full bg-white" />
+                                    <Textarea 
+                                        value={ideaDescription} 
+                                        onChange={(e) => setIdeaDescription(e.target.value)} 
+                                        className="h-96 w-full bg-white" 
+                                    />
                                 ) : (
-                                    <p>{ideaDescription}</p>
+                                    <div className="prose prose-gray max-w-none">
+                                        <ReactMarkdown
+                                            components={{
+                                                h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 text-gray-900" {...props} />,
+                                                h2: ({node, ...props}) => <h2 className="text-xl font-semibold mb-3 text-gray-900" {...props} />,
+                                                h3: ({node, ...props}) => <h3 className="text-lg font-medium mb-2 text-gray-900" {...props} />,
+                                                p: ({node, ...props}) => <p className="mb-3 text-gray-700 leading-relaxed" {...props} />,
+                                                ul: ({node, ...props}) => <ul className="list-disc ml-6 mb-3 space-y-1" {...props} />,
+                                                ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-3 space-y-1" {...props} />,
+                                                li: ({node, ...props}) => <li className="text-gray-700" {...props} />,
+                                                strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
+                                                em: ({node, ...props}) => <em className="italic" {...props} />,
+                                                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-200 pl-4 italic text-gray-600 my-4" {...props} />,
+                                                code: ({node, ...props}) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props} />,
+                                                pre: ({node, ...props}) => <pre className="bg-gray-100 p-3 rounded-lg overflow-x-auto text-sm font-mono mb-3" {...props} />
+                                            }}
+                                        >
+                                            {ideaDescription}
+                                        </ReactMarkdown>
+                                    </div>
                                 )}
                             </div>
                         </CardContent>
