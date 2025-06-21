@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Download, Eye, Edit3, FileText } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 // Mock markdown content
 const initialMarkdown = `# Idea Summary
@@ -70,31 +71,11 @@ export default function SynthesizePage() {
   const [isLoading, setIsLoading] = useState(false);
   const markdownRef = useRef<HTMLDivElement>(null);
 
-  // Simple markdown to HTML converter for preview
-  const markdownToHtml = (text: string, forPdf = false) => {
-    // Split into lines and process
+  // Simple markdown to HTML converter for PDF only
+  const markdownToHtmlForPdf = (text: string) => {
     const lines = text.split('\n');
     const processedLines = [];
     let inList = false;
-    
-    // Different classes for preview vs PDF
-    const classes = forPdf ? {
-      h1: '',
-      h2: '',
-      h3: '',
-      p: '',
-      ul: '',
-      li: '',
-      hr: ''
-    } : {
-      h1: 'class="text-2xl font-bold mt-8 mb-4 text-gray-900"',
-      h2: 'class="text-xl font-bold mt-6 mb-3 text-gray-900"', 
-      h3: 'class="text-lg font-semibold mt-4 mb-2 text-gray-800"',
-      p: 'class="mb-3 text-gray-700"',
-      ul: 'class="mb-4"',
-      li: 'class="mb-1 ml-4"',
-      hr: 'class="my-6 border-gray-300"'
-    };
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -111,36 +92,47 @@ export default function SynthesizePage() {
       // Headers
       if (line.startsWith('### ')) {
         if (inList) { processedLines.push('</ul>'); inList = false; }
-        processedLines.push(`<h3 ${classes.h3}>${line.substring(4)}</h3>`);
+        processedLines.push(`<h3>${line.substring(4)}</h3>`);
       } else if (line.startsWith('## ')) {
         if (inList) { processedLines.push('</ul>'); inList = false; }
-        processedLines.push(`<h2 ${classes.h2}>${line.substring(3)}</h2>`);
+        processedLines.push(`<h2>${line.substring(3)}</h2>`);
       } else if (line.startsWith('# ')) {
         if (inList) { processedLines.push('</ul>'); inList = false; }
-        processedLines.push(`<h1 ${classes.h1}>${line.substring(2)}</h1>`);
+        processedLines.push(`<h1>${line.substring(2)}</h1>`);
       }
       // Lists
       else if (line.startsWith('- ') || line.startsWith('* ')) {
         if (!inList) {
-          processedLines.push(`<ul ${classes.ul}>`);
+          processedLines.push('<ul>');
           inList = true;
         }
-        const content = line.substring(2).replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
-        const bullet = forPdf ? '' : '• ';
-        processedLines.push(`<li ${classes.li}>${bullet}${content}</li>`);
+        const content = line.substring(2).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        processedLines.push(`<li>${content}</li>`);
+      }
+      // Numbered lists
+      else if (/^\d+\.\s/.test(line)) {
+        if (inList && processedLines[processedLines.length - 1] === '</ul>') {
+          processedLines.pop();
+          processedLines.push('<ol>');
+        } else if (!inList) {
+          processedLines.push('<ol>');
+          inList = true;
+        }
+        const content = line.replace(/^\d+\.\s/, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        processedLines.push(`<li>${content}</li>`);
       }
       // Horizontal rule
       else if (line === '---') {
-        if (inList) { processedLines.push('</ul>'); inList = false; }
-        processedLines.push(`<hr ${classes.hr}>`);
+        if (inList) { processedLines.push(inList ? '</ul>' : '</ol>'); inList = false; }
+        processedLines.push('<hr>');
       }
       // Regular text
       else {
         if (inList) { processedLines.push('</ul>'); inList = false; }
         const content = line
-          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
-        processedLines.push(`<p ${classes.p}>${content}</p>`);
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        processedLines.push(`<p>${content}</p>`);
       }
     }
     
@@ -161,7 +153,7 @@ export default function SynthesizePage() {
         return;
       }
 
-      const htmlContent = markdownToHtml(markdown, true); // true for PDF mode
+      const htmlContent = markdownToHtmlForPdf(markdown);
       
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -205,22 +197,13 @@ export default function SynthesizePage() {
               text-align: justify;
             }
             
-            ul { 
+            ul, ol { 
               margin: 0.5em 0;
-              padding-left: 0;
-              list-style: none;
+              padding-left: 1.5em;
             }
             
             li { 
               margin: 0.2em 0;
-              padding-left: 1em;
-              position: relative;
-            }
-            
-            li:before {
-              content: "•";
-              position: absolute;
-              left: 0;
             }
             
             strong { 
@@ -322,7 +305,7 @@ export default function SynthesizePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           {isPreview ? (
-            // Preview Mode
+            // Preview Mode with ReactMarkdown
             <div className="p-8">
               <div className="mb-6 pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-center space-x-2 mb-2">
@@ -332,11 +315,27 @@ export default function SynthesizePage() {
                 <p className="text-center text-gray-600 text-sm">Synthesized Startup Analysis</p>
               </div>
               
-              <div 
-                ref={markdownRef}
-                className="prose prose-lg max-w-none"
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(markdown) }}
-              />
+              <div ref={markdownRef} className="prose prose-lg max-w-none">
+                <ReactMarkdown
+                  components={{
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-8 mb-4 text-gray-900" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-6 mb-3 text-gray-900" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-800" {...props} />,
+                    p: ({node, ...props}) => <p className="mb-3 text-gray-700 leading-relaxed" {...props} />,
+                    ul: ({node, ...props}) => <ul className="list-disc ml-6 mb-4 space-y-1" {...props} />,
+                    ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-4 space-y-1" {...props} />,
+                    li: ({node, ...props}) => <li className="text-gray-700" {...props} />,
+                    strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
+                    em: ({node, ...props}) => <em className="italic text-gray-700" {...props} />,
+                    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-200 pl-4 italic text-gray-600 my-4" {...props} />,
+                    code: ({node, ...props}) => <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800" {...props} />,
+                    pre: ({node, ...props}) => <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono mb-4" {...props} />,
+                    hr: ({node, ...props}) => <hr className="my-6 border-gray-300" {...props} />
+                  }}
+                >
+                  {markdown}
+                </ReactMarkdown>
+              </div>
               
               <div className="mt-12 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
                 Generated by Supernote on {new Date().toLocaleDateString()}
