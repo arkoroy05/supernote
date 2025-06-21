@@ -87,10 +87,11 @@ export default function Starting() {
             const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/idea/analyze`, { idea: ideaText }, { withCredentials: true });
             if (response?.data) {
                 localStorage.setItem('ideaAnalysisData', JSON.stringify(response.data));
+                router.push('/variations');
             }
             setIsLoading(false);
 
-            router.push('/variations');
+            
         }
         catch (error: unknown) {
             const errorData = error instanceof Error

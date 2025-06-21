@@ -99,75 +99,77 @@ export const createProject = async (req, res) => {
 
 
 export const converseWithNode = async (req, res) => {
-
-    const { parentNodeId, prompt, position, title, useRAG } = req.body;
+    // Note: The 'title' from the request body is no longer used.
+    const { parentNodeId, prompt, position, useRAG } = req.body;
     const { projectId } = req.params;
 
-
     if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') {
-        return res.status(400).json({ message: 'A valid node position object {x, y} is required from the frontend.' });
+        return res.status(400).json({ message: 'A valid node position object {x, y} is required.' });
     }
     if (!prompt || !parentNodeId) {
         return res.status(400).json({ message: 'A parentNodeId and prompt are required.' });
     }
 
     try {
-
-        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+        const project = await Project.findOne({ _id: projectId, user: userId });
+        
         if (!project) {
-            return res.status(404).json({ message: 'Project not found.' });
+            return res.status(404).json({ message: 'Project not found or you do not have permission.' });
         }
 
         const conversation_history = buildHierarchicalContext(project.nodes, project.edges, parentNodeId);
 
-
+        // Updated Prompt Template to request JSON output with a title and content
         const llmPromptTemplate = PromptTemplate.fromTemplate(
-            `You are an expert research assistant. Given the conversation history and potentially some retrieved documents, answer the user's question intelligently.\n\n` +
-            `Conversation History (for context):\n{conversation_history}\n\n` +
-            `Retrieved Documents (if any):\n{context}\n\n` +
-            `User's Question:\n{question}\n\n` +
-            `Your Answer:`
+            `You are an expert research assistant. Given the conversation history, intelligently answer the user's question.
+            
+            Based on the response you generate, create a concise, descriptive title for it (5-10 words).
+
+            Conversation History (for context):\n{conversation_history}\n\n
+            User's Question:\n{question}\n\n
+
+            Your final output MUST be a single JSON object with exactly two keys: "title" and "content".
+            Example: {{"title": "A Concise, Generated Title", "content": "The full, detailed answer to the user's question goes here."}}
+
+            JSON Response:`
         );
 
-
+        // Updated chain to include the JsonOutputParser
         const chain = RunnableSequence.from([
             {
                 question: (input) => input.question,
                 conversation_history: (input) => input.conversation_history,
                 context: async (input) => {
                     if (!useRAG) return "No documents requested.";
-
                     const vectorStore = new MongoDBAtlasVectorSearch(embeddingModel, {
                         collection: collection('vectors'),
                         indexName: "default",
                     });
-
-                    const retriever = vectorStore.asRetriever({
-                        filter: { preFilter: { userId: input.userId } }
-                    });
-
+                    const retriever = vectorStore.asRetriever({ filter: { preFilter: { userId: input.userId } } });
                     const docs = await retriever.getRelevantDocuments(input.question);
                     return docs.map(doc => doc.pageContent).join('\n---\n');
                 }
             },
             llmPromptTemplate,
             chatModel,
-            new StringOutputParser(),
+            new JsonOutputParser(),
         ]);
 
-
+        // The result is now an object: { title: string, content: string }
         const result = await chain.invoke({
             question: prompt,
             conversation_history: conversation_history,
-            userId: req.user.id
+            userId: userId
         });
 
-
+        // Use the AI-generated title and content for the new node
         const newNode = {
             id: `node_${Date.now()}`,
-            data: { label: result, prompt: prompt },
+            data: { label: result.content, prompt: prompt },
             position: position,
-            title: title || '',
+            title: result.title, 
         };
 
         const newEdge = {
@@ -176,11 +178,9 @@ export const converseWithNode = async (req, res) => {
             target: newNode.id,
         };
 
-
         project.nodes.push(newNode);
         project.edges.push(newEdge);
         await project.save();
-
 
         res.status(201).json({ newNode, newEdge });
 
@@ -189,7 +189,6 @@ export const converseWithNode = async (req, res) => {
         res.status(500).json({ message: 'Server error during conversation.' });
     }
 };
-
 
 export const synthesizeDocument = async (req, res) => {
     const { projectId } = req.params;
