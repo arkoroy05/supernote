@@ -60,14 +60,18 @@ const buildHierarchicalContext = (nodes, edges, startNodeId) => {
 
 
 export const createProject = async (req, res) => {
+    console.log('createProject');
     const { name, nodes, edges } = req.body;
     if (!nodes || !edges || !name) {
         return res.status(400).json({ message: 'Project name, nodes, and edges are required.' });
     }
 
     try {
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+
         const project = new Project({
-            user: req.user.id,
+            user: userId,
             name,
             nodes,
             edges

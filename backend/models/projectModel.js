@@ -39,7 +39,7 @@ const projectRatingSchema = new mongoose.Schema({
 
 const projectSchema = new mongoose.Schema({
   user: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     required: true,
     ref: 'User',
   },
