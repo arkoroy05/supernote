@@ -1,12 +1,11 @@
 import { Inter } from "next/font/google"
 import type { NextFontWithVariable } from "next/dist/compiled/@next/font"
-import type { NextFont } from "next/font"
 
-const ppEditorialNewUltralightItalic: NextFontWithVariable & NextFont = {
+const ppEditorialNewUltralightItalic: NextFontWithVariable = {
   className: "font-pp-editorial",
   style: {
     fontFamily: "PPEditorialNew-UltralightItalic",
-    fontWeight: "200",
+    fontWeight: 200,
     fontStyle: "italic",
   },
   variable: "--font-pp-editorial",
