@@ -5,6 +5,7 @@ import { Features } from "@/components/features"
 import { Brain, BrainCog } from "lucide-react";
 import { SparklesText } from "@/components/ui/sparkles-text";
 import { Pricing } from "@/components/pricing";
+import { MarqueeAnimation } from "@/components/ui/marquee-effect";
 
 const demoPlans = [
     {
@@ -115,6 +116,22 @@ export default function Home() {
       src: "/hero.jpg"
     }}
   />
+  <div className="flex flex-col gap-4">
+      <MarqueeAnimation
+        direction="left"
+        baseVelocity={-1}
+        className="bg-green-500 text-white py-2"
+      >
+        TEAM SUPERNOTE
+      </MarqueeAnimation>
+      <MarqueeAnimation
+        direction="right"
+        baseVelocity={-1}
+        className="bg-purple-500 text-white py-2"
+      >
+        TEAM SUPERNOTE
+      </MarqueeAnimation>
+    </div>    
   <Features 
   progressGradientLight="bg-gradient-to-r from-sky-400 to-sky-500"
   progressGradientDark="bg-gradient-to-r from-sky-300 to-sky-400" 
