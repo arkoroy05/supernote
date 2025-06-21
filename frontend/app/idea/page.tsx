@@ -13,6 +13,7 @@ import { useIdeaAccelerator } from "@/app/hooks"
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants"
 import { type Abi } from 'viem'
 import { useAccount } from "wagmi"
+import IdeationModal from "@/components/IdeationModal"
 
 type EvaluationButton = "opportunity" | "problem" | "feasibility" | "whyNow"
 type ValidateAttribute = "userFlow" | "marketGap" | "usability" | "optimalSeo" | "monetization" | "scalability" | "technicalComplexity" | "differentiation" | "adoptionBarriers"
@@ -33,9 +34,7 @@ interface AttributeState {
 export default function Component() {
   const [showIdeateModal, setShowIdeateModal] = useState(false)
   const [showFixIssuesModal, setShowFixIssuesModal] = useState(false)
-  const [selectedIdeateAttribute, setSelectedIdeateAttribute] = useState<IdeateAttribute>("userFlow")
-  const [results, setResults] = useState("")
-  const [isEditingResults, setIsEditingResults] = useState(false)
+  const [selectedIdeateAttribute] = useState<IdeateAttribute>("userFlow")
   const [aiSuggestion, setAiSuggestion] = useState("")
   const [isEditingAiSuggestion, setIsEditingAiSuggestion] = useState(false)
 
@@ -176,7 +175,7 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
     }))
   }
 
-  const handleValidate = () => {
+  const handleIdeateValidate = (resultsText: string) => {
     const attributeMap: Record<IdeateAttribute, ValidateAttribute> = {
       userFlow: "userFlow",
       usability: "usability",
@@ -200,10 +199,8 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
     // Save the results for this attribute
     setResultsMap((prev) => ({
       ...prev,
-      [validateKey]: results,
+      [validateKey]: resultsText,
     }))
-
-    setShowIdeateModal(false)
   }
   
   // Handle clicking on a validated attribute
@@ -788,99 +785,12 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
         </DialogContent>
       </Dialog>
 
-      {/* Ideate Over Modal */}
-      <Dialog open={showIdeateModal} onOpenChange={setShowIdeateModal}>
-        <DialogContent className="w-full max-w-full lg:max-w-6xl bg-white border border-gray-200 shadow-md rounded-2xl p-8">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-900 mb-6">Ideate Over Modal</DialogTitle>
-          </DialogHeader>
-
-          <div className="flex flex-col lg:flex-row gap-10 items-stretch mt-2">
-            {/* Left Side - Grouped Box */}
-            <div className="flex flex-col flex-1 max-w-md bg-white rounded-xl border border-gray-200 p-4 gap-4 shadow-sm">
-              {/* Attribute Buttons */}
-              <div className="bg-white rounded-lg border border-gray-200 p-2 flex flex-col gap-2 shadow-sm">
-                {[
-                  { key: "userFlow" as IdeateAttribute, label: "User Flow" },
-                  { key: "usability" as IdeateAttribute, label: "Usability" },
-                  { key: "marketing" as IdeateAttribute, label: "Marketing" },
-                  { key: "need" as IdeateAttribute, label: "Need" },
-                  { key: "monetization" as IdeateAttribute, label: "Monetization" },
-                  { key: "scalability" as IdeateAttribute, label: "Scalability" },
-                  { key: "technicalComplexity" as IdeateAttribute, label: "Technical Complexity" },
-                  { key: "differentiation" as IdeateAttribute, label: "Differentiation" },
-                  { key: "adoptionBarriers" as IdeateAttribute, label: "Adoption Barriers" },
-                ].map(({ key, label }) => (
-                  <Button
-                    key={key}
-                    variant={selectedIdeateAttribute === key ? "default" : "outline"}
-                    onClick={() => setSelectedIdeateAttribute(key)}
-                    className={`w-full justify-start h-10 text-base font-medium border ${
-                      selectedIdeateAttribute === key
-                        ? "bg-gray-900 text-white border-gray-900 hover:bg-gray-800"
-                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Description Box */}
-              <div className="bg-gray-50 rounded-lg border border-gray-100 p-3 shadow-sm min-h-[60px] flex items-center">
-                <span className="text-sm text-gray-700">
-                  {selectedIdeateAttribute === "userFlow" && "Analyze the user journey and interaction flow"}
-                  {selectedIdeateAttribute === "usability" && "Evaluate ease of use and user experience"}
-                  {selectedIdeateAttribute === "marketing" && "Assess marketing strategies and channels"}
-                  {selectedIdeateAttribute === "need" && "Validate market need and demand"}
-                  {selectedIdeateAttribute === "monetization" && "Explore revenue models and how the idea will generate income"}
-                  {selectedIdeateAttribute === "scalability" && "Assess how well the idea can grow and handle increased demand"}
-                  {selectedIdeateAttribute === "technicalComplexity" && "Evaluate the technical challenges and feasibility of building the idea"}
-                  {selectedIdeateAttribute === "differentiation" && "Identify what makes this idea unique compared to competitors"}
-                  {selectedIdeateAttribute === "adoptionBarriers" && "Consider obstacles that could prevent users from adopting the idea"}
-                </span>
-              </div>
-
-              {/* Start Ideating Button */}
-              <div className="flex justify-center">
-                <Button className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-2 text-base font-semibold rounded-lg">Start Ideating</Button>
-              </div>
-            </div>
-
-            {/* Right Side - Results Box */}
-            <div className="flex flex-col flex-[2] items-center justify-start gap-6">
-              <div className="w-full bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col h-[350px]">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-semibold text-xl text-gray-900">Results</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsEditingResults(!isEditingResults)}
-                    className="flex-shrink-0"
-                  >
-                    {isEditingResults ? <Check className="w-6 h-6" /> : <Pencil className="w-5 h-5" />}
-                  </Button>
-                </div>
-                <div className="flex-1 flex items-start">
-                  {isEditingResults ? (
-                    <Textarea
-                      placeholder="Enter your results here..."
-                      value={results}
-                      onChange={(e) => setResults(e.target.value)}
-                      className="border-gray-200 focus:border-gray-400 h-full resize-none text-base"
-                    />
-                  ) : (
-                    <span className="text-base text-gray-700 leading-relaxed">{results}</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex justify-center w-full">
-                <Button onClick={handleValidate} className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-2 text-base font-semibold rounded-lg">Validate</Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Ideate Modal - Replace the old implementation with our new component */}
+      <IdeationModal 
+        isOpen={showIdeateModal} 
+        onClose={() => setShowIdeateModal(false)} 
+        onValidate={handleIdeateValidate}
+      />
 
       {/* Fix Issues Modal (updated with tabs) */}
       <Dialog open={showFixIssuesModal} onOpenChange={setShowFixIssuesModal}>
