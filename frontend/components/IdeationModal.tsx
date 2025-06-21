@@ -141,6 +141,9 @@ const IdeationModal: React.FC<IdeationModalProps> = ({
               </span>
             </div>
 
+
+
+
             {/* Generate Options */}
             <div className="space-y-3">
               <Button
