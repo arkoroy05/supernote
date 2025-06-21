@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { ref } from "process";
 
 const stealthPitchSchema = new mongoose.Schema({
   user: {
