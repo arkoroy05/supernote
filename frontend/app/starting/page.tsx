@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Paperclip, Send } from 'lucide-react';
+import { Typewriter } from '@/components/ui/typewriter';
 
 // Aurora Background Component
 const AuroraBackground = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -98,8 +99,24 @@ export default function Starting() {
         <main className="flex flex-col items-center justify-center px-6 py-20">
         <div className="max-w-4xl text-center">
             <h1 className="text-6xl md:text-6xl font-bold mb-8 leading-tight text-gray-900">
-            What do you want to build?
-            </h1>
+            <span>{"What do you want to "}</span>
+           
+            <div className="inline-block min-h-[1.5em] min-w-[6ch]">
+              <Typewriter
+                  text={[
+                    "ideate?",
+                    "build?",
+                    "create?",
+                    "learn?",
+                  ]}
+                  speed={70}
+                  className="text-blue-500"
+                  waitTime={1500}
+                  deleteSpeed={40}
+                  cursorChar={"_"}
+                  />
+            </div>
+             </h1>
             <p className="text-2xl text-gray-700 mb-16 font-light leading-relaxed">
             Turn raw ideas into real startups — one smart node at a time.
             </p>

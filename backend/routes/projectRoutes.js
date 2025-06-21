@@ -5,9 +5,11 @@ import {
     getProjectById,
     converseWithNode,
     synthesizeDocument,
-    rateIdeaState,
+    updateProjectRating,
     regenerateNode,
-    generateValidationPitch
+    generateValidationPitch,
+    deleteNode,
+    updateNodePositions
 } from '../controllers/projectController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -32,7 +34,7 @@ router.route('/:projectId/synthesize')
 
 // Route for AI to rate the current state of the idea
 router.route('/:projectId/rate')
-    .post(protect, rateIdeaState);
+    .post(protect, updateProjectRating);
 
 // Route to regenerate a single node's content
 router.route('/:projectId/node/:nodeId/regenerate')
@@ -41,6 +43,12 @@ router.route('/:projectId/node/:nodeId/regenerate')
 // Route to generate a validation stealth pitch
 router.route('/:projectId/generate-pitch')
     .post(protect, generateValidationPitch);
+
+router.route('/:projectId/node/:nodeId')
+    .delete(protect, deleteNode);
+
+router.route('/:projectId/nodes/positions')
+    .patch(protect, updateNodePositions);
 
 router.route('/working').get((req, res) => {
     res.status(200).json({ message: 'Project routes are working!' });

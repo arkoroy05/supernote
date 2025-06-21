@@ -7,6 +7,36 @@ import { MongoDBAtlasVectorSearch } from '@langchain/mongodb';
 import { collection } from '../config/db.js';
 
 
+const buildFullGraphContext = (nodes, edges) => {
+    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+    const childrenMap = new Map();
+    const roots = new Set(nodes.map(n => n.id));
+
+    for (const edge of edges) {
+        if (!childrenMap.has(edge.source)) {
+            childrenMap.set(edge.source, []);
+        }
+        childrenMap.get(edge.source).push(edge.target);
+        roots.delete(edge.target); // A node with an incoming edge is not a root
+    }
+
+    let fullContext = '';
+    const traverse = (nodeId, depth) => {
+        const node = nodeMap.get(nodeId);
+        if (!node) return;
+
+        fullContext += `${'  '.repeat(depth)}- ${node.data.label}\n`;
+        if (childrenMap.has(nodeId)) {
+            for (const childId of childrenMap.get(nodeId)) {
+                traverse(childId, depth + 1);
+            }
+        }
+    };
+
+    roots.forEach(rootId => traverse(rootId, 0));
+    return fullContext;
+};
+
 const buildHierarchicalContext = (nodes, edges, startNodeId) => {
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
@@ -30,9 +60,7 @@ const buildHierarchicalContext = (nodes, edges, startNodeId) => {
 
 
 export const createProject = async (req, res) => {
-
     const { name, nodes, edges } = req.body;
-
     if (!nodes || !edges || !name) {
         return res.status(400).json({ message: 'Project name, nodes, and edges are required.' });
     }
@@ -44,9 +72,21 @@ export const createProject = async (req, res) => {
             nodes,
             edges
         });
+        
+        const initialContext = buildFullGraphContext(nodes, edges);
+
+        
+        const opportunityPrompt = PromptTemplate.fromTemplate(
+            `Based on this initial startup idea, analyze the market and identify a key opportunity. Provide your response ONLY as a valid JSON object with keys: "id", "type", "market", "target", "main_competitors", "trendAnalysis".Please write max 2-3 words per key, 1 word per key is preferred .\n\nIdea:\n{context}`
+        );
+        const opportunityChain = opportunityPrompt.pipe(chatModel).pipe(new JsonOutputParser());
+        const opportunityData = await opportunityChain.invoke({ context: initialContext });
+        
+        project.opportunity = opportunityData;
 
         const createdProject = await project.save();
         res.status(201).json(createdProject);
+
     } catch (error) {
         console.error('Error creating project:', error);
         res.status(500).json({ message: 'Server error while creating project.' });
@@ -55,15 +95,27 @@ export const createProject = async (req, res) => {
 
 
 export const converseWithNode = async (req, res) => {
-    const { parentNodeId, prompt, useRAG } = req.body;
+
+    const { parentNodeId, prompt, position, title, useRAG } = req.body;
     const { projectId } = req.params;
 
-    try {
-        const project = await Project.findOne({ _id: projectId, user: req.user.id });
-        if (!project) return res.status(404).json({ message: 'Project not found.' });
 
+    if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') {
+        return res.status(400).json({ message: 'A valid node position object {x, y} is required from the frontend.' });
+    }
+    if (!prompt || !parentNodeId) {
+        return res.status(400).json({ message: 'A parentNodeId and prompt are required.' });
+    }
+
+    try {
+
+        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
+        }
 
         const conversation_history = buildHierarchicalContext(project.nodes, project.edges, parentNodeId);
+
 
         const llmPromptTemplate = PromptTemplate.fromTemplate(
             `You are an expert research assistant. Given the conversation history and potentially some retrieved documents, answer the user's question intelligently.\n\n` +
@@ -73,6 +125,7 @@ export const converseWithNode = async (req, res) => {
             `Your Answer:`
         );
 
+        
         const chain = RunnableSequence.from([
             {
                 question: (input) => input.question,
@@ -81,7 +134,7 @@ export const converseWithNode = async (req, res) => {
                     if (!useRAG) return "No documents requested.";
                     
                     const vectorStore = new MongoDBAtlasVectorSearch(embeddingModel, {
-                        collection: collection('DB1'), 
+                        collection: collection('vectors'), 
                         indexName: "default",
                     });
                     
@@ -98,59 +151,63 @@ export const converseWithNode = async (req, res) => {
             new StringOutputParser(),
         ]);
 
+  
         const result = await chain.invoke({
             question: prompt,
-            conversation_history: conversation_history, 
+            conversation_history: conversation_history,
             userId: req.user.id
         });
-        
 
-        const parentNode = project.nodes.find(n => n.id === parentNodeId);
-        if (!parentNode) {
-            return res.status(404).json({ message: "Parent node not found in project." });
-        }
-
+       
         const newNode = {
             id: `node_${Date.now()}`,
             data: { label: result, prompt: prompt },
-           
-            position: { x: parentNode.position.x, y: parentNode.position.y + 120 },
+            position: position,       
+            title: title || '',       
         };
 
         const newEdge = {
             id: `edge_${parentNodeId}-${newNode.id}`,
             source: parentNodeId,
-            target: newNode.id,
+      target: newNode.id,
         };
 
+        
         project.nodes.push(newNode);
         project.edges.push(newEdge);
         await project.save();
 
+       
         res.status(201).json({ newNode, newEdge });
+        
     } catch (error) {
         console.error('Error during conversation:', error);
-        res.status(500).json({ message: 'Conversation error.' });
+        res.status(500).json({ message: 'Server error during conversation.' });
     }
 };
 
 
 export const synthesizeDocument = async (req, res) => {
-    const { selectedNodeIds } = req.body;
     const { projectId } = req.params;
+    
 
     try {
         const project = await Project.findOne({ _id: projectId, user: req.user.id });
-        if (!project) return res.status(404).json({ message: 'Project not found.' });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
+        }
 
-        const synthesisContext = selectedNodeIds
-            .map(id => buildHierarchicalContext(project.nodes, project.edges, id))
-            .join('\n\n---\n\n');
+        
+        const synthesisContext = buildFullGraphContext(project.nodes, project.edges);
+
+        if (!synthesisContext) {
+            return res.status(400).json({ message: 'Cannot synthesize an empty project.' });
+        }
 
         const synthesisPrompt = PromptTemplate.fromTemplate(
-            `You are a professional technical writer and business analyst. Your task is to synthesize the following research notes into a single, comprehensive, and well-structured report in Markdown format.\n` +
-            `The notes are structured hierarchically. Where different branches exist, you must compare and contrast them.\n\n` +
-            `Research Notes:\n---\n{notes}\n---\n\n` +
+            `You are a professional technical writer and business analyst. Your task is to synthesize the following complete research graph, which is represented as a structured, indented text, into a single, comprehensive, and well-structured report in Markdown format.\n` +
+            `You must identify the different branches of thought, compare and contrast them, and form a cohesive narrative. The final document should have a clear introduction, body, and conclusion.\n\n` +
+            `Full Research Graph:\n---\n{notes}\n---\n\n` +
             `Generate the full Markdown report now:`
         );
 
@@ -160,7 +217,7 @@ export const synthesizeDocument = async (req, res) => {
         res.status(200).json({ document: finalReport });
     } catch (error) {
         console.error('Error synthesizing document:', error);
-        res.status(500).json({ message: 'Synthesis error.' });
+        res.status(500).json({ message: 'Error synthesizing document.' });
     }
 };
 
@@ -188,36 +245,33 @@ export const getUserProjects = async (req, res) => {
     }
 };
 
-export const rateIdeaState = async (req, res) => {
+
+
+export const updateProjectRating = async (req, res) => {
     const { projectId } = req.params;
-    const { nodeIds } = req.body; 
+
 
     try {
         const project = await Project.findOne({ _id: projectId, user: req.user.id });
         if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-        const researchContext = nodeIds
-            .map(id => buildHierarchicalContext(project.nodes, project.edges, id))
-            .join('\n\n---\n\n');
+
+        const researchContext = buildFullGraphContext(project.nodes, project.edges);
 
         const ratingPrompt = PromptTemplate.fromTemplate(
-            `You are a venture capitalist and startup incubator mentor. Based on the following research notes, critically assess the current state of the project idea.\n` +
-            `Provide a rating from 1-10 and a brief justification for each of the following metrics:\n` +
-            `1.  **Problem Severity:** How significant is the problem being solved?\n` +
-            `2.  **Solution Feasibility:** How feasible is the proposed solution technically and financially?\n` +
-            `3.  **Market Opportunity:** How large and accessible is the target market?\n` +
-            `4.  **Urgency (Why Now?):** Is there a compelling reason this idea needs to exist right now?\n\n` +
-            `Research Notes:\n---\n{notes}\n---\n\n` +
-            `Your Assessment:`
+            `You are a venture capitalist. Based on the following research notes, assess the project & rate the project out of 10. Provide your response ONLY as a valid JSON object with keys: "opportunity" (number), "problem" (number), "feasibility" (number), "why_now" (number), and "feedback" (string).\n\nResearch:\n{notes}`
         );
 
-        const ratingChain = ratingPrompt.pipe(chatModel).pipe(new StringOutputParser());
-        const rating = await ratingChain.invoke({ notes: researchContext });
+        const ratingChain = ratingPrompt.pipe(chatModel).pipe(new JsonOutputParser());
+        const ratingData = await ratingChain.invoke({ notes: researchContext });
 
-        res.status(200).json({ rating });
+        project.projectRating = ratingData;
+        const updatedProject = await project.save();
+
+        res.status(200).json(updatedProject);
     } catch (error) {
-        console.error('Error rating idea state:', error);
-        res.status(500).json({ message: 'Error rating idea.' });
+        console.error('Error updating project rating:', error);
+        res.status(500).json({ message: 'Error updating rating.' });
     }
 };
 
@@ -306,5 +360,69 @@ export const regenerateNode = async (req, res) => {
     } catch (error) {
         console.error('Error regenerating node:', error);
         res.status(500).json({ message: 'Error regenerating node.' });
+    }
+};
+
+export const deleteNode = async (req, res) => {
+    const { projectId, nodeId } = req.params;
+    try {
+        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        if (!project) return res.status(404).json({ message: 'Project not found' });
+
+        const initialNodeCount = project.nodes.length;
+        
+
+        project.nodes = project.nodes.filter(node => node.id !== nodeId);
+        
+
+        project.edges = project.edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId);
+
+        if (project.nodes.length === initialNodeCount) {
+            return res.status(404).json({ message: 'Node ID not found in project' });
+        }
+        
+        const updatedProject = await project.save();
+        res.status(200).json(updatedProject);
+
+    } catch (error) {
+        console.error('Error deleting node:', error);
+        res.status(500).json({ message: 'Server error while deleting node.' });
+    }
+};
+
+export const updateNodePositions = async (req, res) => {
+    const { projectId } = req.params;
+
+    const { updates } = req.body;
+
+    if (!updates || !Array.isArray(updates)) {
+        return res.status(400).json({ message: 'Request body must include an array of updates.' });
+    }
+
+    try {
+        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+
+        const nodeMap = new Map(project.nodes.map(node => [node.id, node]));
+
+
+        for (const update of updates) {
+            if (nodeMap.has(update.id)) {
+                const nodeToUpdate = nodeMap.get(update.id);
+
+                nodeToUpdate.position.x = update.position.x;
+                nodeToUpdate.position.y = update.position.y;
+            }
+        }
+        
+        const updatedProject = await project.save();
+        res.status(200).json(updatedProject);
+
+    } catch (error) {
+        console.error('Error updating node positions:', error);
+        res.status(500).json({ message: 'Server error while updating positions.' });
     }
 };
