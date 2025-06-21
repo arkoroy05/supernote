@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Paperclip, Send } from 'lucide-react';
 import { Typewriter } from '@/components/ui/typewriter';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 // Aurora Background Component
 const AuroraBackground = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -74,52 +75,34 @@ const AuroraBackground = ({ children, className = "" }: { children: React.ReactN
 };
 
 export default function Starting() {
-    const [ideaText, setIdeaText] = useState<string>("");
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [ideaText, setIdeaText] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
 
-    const handleAnalyzeIdea = async () => {
-      if (!ideaText.trim()) return;
-      
-      setIsLoading(true);
-      try {
-        const baseURL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
-        const response = await axios.post(`${baseURL}/api/idea/analyze`, {
-          idea: ideaText
-        }, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
+    const handleSubmit = async () => {
+        if (!ideaText.trim()) return;
         
-        console.log("Analysis response:", response.data);
-        
-        // Use the variations from the API response, or create meaningful fallbacks if needed
-        const variations = response.data.analysis.variations || [
-          `${response.data.idea} with a focus on sustainability`,
-          `${response.data.idea} targeting enterprise customers`,
-          `${response.data.idea} as a subscription service`,
-          `${response.data.idea} with mobile-first approach`,
-          `${response.data.idea} with freemium business model`
-        ];
-        
-        // Store the analysis data in localStorage to pass to the variations page
-        const analysisData = {
-          analysis: response.data.analysis.summary,
-          variations: variations
-        };
-        
-        console.log("Storing analysis data:", analysisData);
-        localStorage.setItem('ideaAnalysisData', JSON.stringify(analysisData));
-        
-        // Redirect to variations page instead of graph
-        window.location.href = '/variations';
-      } catch (error) {
-        console.error("Error analyzing idea:", error);
-        // Show error message to user
-        alert("There was an error analyzing your idea. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
+        setIsLoading(true);
+        try {
+            // Get base URL from environment variable or default to localhost
+            const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+            
+            // Send the request to analyze endpoint
+            const response = await axios.post(`${baseURL}/api/idea/analyze`, {
+                idea: ideaText
+            });
+            
+            // Store the data in localStorage for the variations page to access
+            localStorage.setItem('ideaAnalysisData', JSON.stringify(response.data));
+            
+            // Navigate to variations page 
+            router.push('/variations');
+        } catch (error) {
+            console.error("Error analyzing idea:", error);
+            alert("Failed to analyze your idea. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -135,12 +118,7 @@ export default function Starting() {
         </div>
 
         <nav className="flex items-center space-x-8">
-            <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors font-medium">
-            Community
-            </a>
-            <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors font-medium">
-            Pricing
-            </a>
+            ...
         </nav>
         </header>
 
@@ -167,7 +145,7 @@ export default function Starting() {
             </div>
              </h1>
             <p className="text-2xl text-gray-700 mb-16 font-light leading-relaxed">
-            Turn raw ideas into real startups — one smart node at a time.
+            Turn ideas into real startups — one smart node at a time.
             </p>
 
             {/* Input Section */}
@@ -185,9 +163,9 @@ export default function Starting() {
                     <Paperclip className="w-5 h-5" />
                 </button>
                 <button 
-                  onClick={handleAnalyzeIdea} 
+                  onClick={handleSubmit}
                   disabled={isLoading || !ideaText.trim()}
-                  className={`bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg ${(isLoading || !ideaText.trim()) ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg ${isLoading || !ideaText.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                     <Send className="w-5 h-5" />
                 </button>

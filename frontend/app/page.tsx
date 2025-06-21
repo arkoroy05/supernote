@@ -101,15 +101,15 @@ export default function Home() {
     <div>
         <BackgroundLines className="flex items-center justify-center w-full flex-col px-4">
             <HeroWithMockup
-                title="Notion lets you write. We help you not mess up."
+                title="From Shower Thought to Funded Project."
                 description="Map your thoughts, stress-test them with AI, and pitch safely — all before writing a single line of code."
                 primaryCta={{
                 text: "Start Ideating",
-                href: "/",
+                href: "/starting",
                 }}
                 secondaryCta={{
                 text: "View us on GitHub",
-                href: "https://github.com/your-ai-platform",
+                href: "https://github.com/arkoroy05/supernote",
                 }}
                 mockupImage={{
                 alt: "AI Platform Dashboard",
