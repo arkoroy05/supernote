@@ -86,7 +86,7 @@ export const createProject = async (req, res) => {
         const opportunityChain = opportunityPrompt.pipe(chatModel).pipe(new JsonOutputParser());
         const opportunityData = await opportunityChain.invoke({ context: initialContext });
         
-        project.opportunity = opportunityData;
+        project.categorization = opportunityData;
 
         const createdProject = await project.save();
         res.status(201).json(createdProject);
@@ -242,9 +242,12 @@ export const getProjectById = async (req, res) => {
 
 export const getUserProjects = async (req, res) => {
     try {
-        const projects = await Project.find({ user: req.user.id }).sort({ createdAt: -1 });
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+        const projects = await Project.find({ user: userId }).sort({ createdAt: -1 });
         res.json(projects);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ message: 'Server error' });
     }
 };

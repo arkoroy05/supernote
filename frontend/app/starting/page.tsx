@@ -5,6 +5,7 @@ import { Paperclip, Send } from 'lucide-react';
 import { Typewriter } from '@/components/ui/typewriter';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@civic/auth/react';
 
 // Aurora Background Component
 const AuroraBackground = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -93,10 +94,10 @@ export default function Starting() {
             router.push('/variations');
         }
         catch (error: unknown) {
-            const errorData = error instanceof Error 
+            const errorData = error instanceof Error
                 ? { message: error.message }
-                : axios.isAxiosError(error) && error.response 
-                    ? error.response.data 
+                : axios.isAxiosError(error) && error.response
+                    ? error.response.data
                     : { message: 'An unknown error occurred' };
             console.log(JSON.stringify(errorData, null, 2));
             setIsLoading(false);
