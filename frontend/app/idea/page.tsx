@@ -6,18 +6,34 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Check, Info, Pencil } from "lucide-react"
+import { Check, Info, Pencil, X, Sparkles, User, Lightbulb, Target, ArrowUp } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { useIdeaAccelerator } from "@/app/hooks"
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants"
 import { type Abi } from 'viem'
 import { useAccount } from "wagmi"
-import IdeationModal from "@/components/IdeationModal"
+
+// Define the structure for an idea type
+interface IdeaType {
+  title: string;
+  icon: React.ElementType;
+}
+
+// Moved ideaTypes to the top-level scope for universal access
+const ideaTypes: IdeaType[] = [
+    { title: "User Persona", icon: User },
+    { title: "Core Feature", icon: Lightbulb },
+    { title: "Target Market", icon: Target },
+    { title: "Problem Statement", icon: Info },
+    { title: "Solution Outline", icon: Check },
+    { title: "Marketing Angle", icon: Sparkles },
+    { title: "Business Model", icon: Pencil },
+    { title: "Key Metric", icon: Target },
+    { title: "Competitor", icon: User },
+];
 
 type EvaluationButton = "opportunity" | "problem" | "feasibility" | "whyNow"
-type ValidateAttribute = "userFlow" | "marketGap" | "usability" | "optimalSeo" | "monetization" | "scalability" | "technicalComplexity" | "differentiation" | "adoptionBarriers"
-type IdeateAttribute = "userFlow" | "usability" | "marketing" | "need" | "monetization" | "scalability" | "technicalComplexity" | "differentiation" | "adoptionBarriers"
 
 interface EvaluationState {
   loading: boolean
@@ -26,18 +42,8 @@ interface EvaluationState {
   revealed: boolean
 }
 
-interface AttributeState {
-  validated: boolean
-  enabled: boolean
-}
-
 export default function Component() {
-  const [showIdeateModal, setShowIdeateModal] = useState(false)
   const [showFixIssuesModal, setShowFixIssuesModal] = useState(false)
-  const [selectedIdeateAttribute] = useState<IdeateAttribute>("userFlow")
-  const [aiSuggestion, setAiSuggestion] = useState("")
-  const [isEditingAiSuggestion, setIsEditingAiSuggestion] = useState(false)
-
   const [ideaTitle, setIdeaTitle] = useState(
     "Renovation Payment Escrow - Financial Protection for Homeowners ($450B Market)",
   )
@@ -77,34 +83,11 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
     whyNow: { loading: false, score: 9, showPopup: false, revealed: false },
   })
 
-  const [validateAttributes, setValidateAttributes] = useState<Record<ValidateAttribute, AttributeState>>({
-    userFlow: { validated: false, enabled: true },
-    marketGap: { validated: false, enabled: false },
-    usability: { validated: false, enabled: false },
-    optimalSeo: { validated: false, enabled: false },
-    monetization: { validated: false, enabled: false },
-    scalability: { validated: false, enabled: false },
-    technicalComplexity: { validated: false, enabled: false },
-    differentiation: { validated: false, enabled: false },
-    adoptionBarriers: { validated: false, enabled: false },
-  })
+  // State for the new inline ideation UI
+  const [selectedIdeaType, setSelectedIdeaType] = useState<string | null>(null);
+  const [ideationPrompt, setIdeationPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Store results for each attribute
-  const [resultsMap, setResultsMap] = useState<Record<ValidateAttribute, string>>({
-    userFlow: "",
-    marketGap: "",
-    usability: "",
-    optimalSeo: "",
-    monetization: "",
-    scalability: "",
-    technicalComplexity: "",
-    differentiation: "",
-    adoptionBarriers: "",
-  })
-  
-  // For showing result popups
-  const [showResultsPopup, setShowResultsPopup] = useState(false)
-  const [currentViewingAttribute, setCurrentViewingAttribute] = useState<ValidateAttribute | null>(null)
 
   const [selectedIssueType, setSelectedIssueType] = useState<EvaluationButton>("opportunity")
   const [selectedIssue, setSelectedIssue] = useState<string>("")
@@ -123,7 +106,7 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
   });
 
   const { data: isStaker } = useIsStaker();
-  
+
   const {
     requestGrant,
     isPending,
@@ -131,84 +114,15 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
     error
   } = useRequestGrant();
 
-  // Get wallet connection status
   const { isConnected } = useAccount()
 
-  const handleEvaluationClick = (type: EvaluationButton) => {
-    // If score exists and is already revealed, show popup with pros/cons
-    if (evaluations[type].score !== null && evaluations[type].revealed) {
-      setEvaluations((prev) => ({
-        ...prev,
-        [type]: { ...prev[type], showPopup: true },
-      }))
-      return
-    }
-    
-    // If score exists but not revealed, just reveal it
-    if (evaluations[type].score !== null && !evaluations[type].revealed) {
-      setEvaluations((prev) => ({
-        ...prev,
-        [type]: { ...prev[type], revealed: true },
-      }))
-      return
-    }
 
-    // If no score yet, load and generate one
-    setEvaluations((prev) => ({
-      ...prev,
-      [type]: { ...prev[type], loading: true },
-    }))
-
-    setTimeout(() => {
-      const score = Math.floor(Math.random() * 10) + 1
-      setEvaluations((prev) => ({
-        ...prev,
-        [type]: { loading: false, score, showPopup: false, revealed: true },
-      }))
-    }, 2000)
-  }
 
   const closePopup = (type: EvaluationButton) => {
     setEvaluations((prev) => ({
       ...prev,
       [type]: { ...prev[type], showPopup: false },
     }))
-  }
-
-  const handleIdeateValidate = (resultsText: string) => {
-    const attributeMap: Record<IdeateAttribute, ValidateAttribute> = {
-      userFlow: "userFlow",
-      usability: "usability",
-      marketing: "marketGap",
-      need: "optimalSeo",
-      monetization: "monetization",
-      scalability: "scalability",
-      technicalComplexity: "technicalComplexity",
-      differentiation: "differentiation",
-      adoptionBarriers: "adoptionBarriers",
-    }
-
-    const validateKey = attributeMap[selectedIdeateAttribute]
-
-    // Update validation status
-    setValidateAttributes((prev) => ({
-      ...prev,
-      [validateKey]: { validated: true, enabled: true },
-    }))
-    
-    // Save the results for this attribute
-    setResultsMap((prev) => ({
-      ...prev,
-      [validateKey]: resultsText,
-    }))
-  }
-  
-  // Handle clicking on a validated attribute
-  const handleValidatedAttributeClick = (attribute: ValidateAttribute) => {
-    if (validateAttributes[attribute].validated) {
-      setCurrentViewingAttribute(attribute)
-      setShowResultsPopup(true)
-    }
   }
 
   const prosConsData = {
@@ -301,6 +215,7 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
     ]
   }
 
+
   const handleGrantRequest = () => {
     if (!grantAmount || !metadataURI) return;
     requestGrant(metadataURI, grantAmount);
@@ -308,9 +223,22 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
 
   const isLoading = isPending || isConfirming;
 
+  const handleGenerateClick = () => {
+    if (!ideationPrompt.trim() && !selectedIdeaType) return;
+    setIsGenerating(true);
+    console.log(`Generating with prompt: ${ideationPrompt} and selected type: ${selectedIdeaType}`);
+    // Simulate API call
+    setTimeout(() => {
+        setIsGenerating(false);
+        // Optional: Clear inputs after generation
+        // setIdeationPrompt("");
+        // setSelectedIdeaType(null);
+    }, 2000);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Main Idea Title */}
         <div className="text-left space-y-4">
           <div className="flex items-start gap-2">
@@ -336,261 +264,110 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Idea Description */}
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Idea Description</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsEditingDescription(!isEditingDescription)}
-                    className="flex-shrink-0"
-                  >
-                    {isEditingDescription ? <Check className="w-6 h-6" /> : <Pencil className="w-5 h-5" />}
-                  </Button>
-                </div>
-                <div className="text-gray-700 leading-relaxed">
-                  {isEditingDescription ? (
-                    <Textarea
-                      value={ideaDescription}
-                      onChange={(e) => setIdeaDescription(e.target.value)}
-                      className="h-96 w-full bg-white"
-                    />
-                  ) : (
-                    ideaDescription.split("\n\n").map((paragraph, index) => {
-                      if (paragraph.includes("\n- ")) {
-                        const parts = paragraph.split("\n- ")
-                        return (
-                          <div key={index}>
-                            <p className="mb-2">{parts[0]}</p>
-                            <ul className="list-disc pl-8 mb-4 space-y-1">
-                              {parts.slice(1).map((item, i) => (
-                                <li key={i}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )
-                      }
-                      return (
-                        <p key={index} className="mb-4">
-                          {paragraph}
-                        </p>
-                      )
-                    })
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Start Ideating Button */}
-            <div className="flex justify-center gap-4">
-              <Button 
-                onClick={() => setShowIdeateModal(true)}
-                className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-2 text-base font-semibold rounded-lg"
-              >
-                Start Ideating
-              </Button>
-              <Button 
-                onClick={() => setShowFixIssuesModal(true)}
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-2 text-base font-semibold rounded-lg"
-              >
-                Fix Issues
-              </Button>
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="lg:col-span-1 space-y-8">
-            {/* Evaluation Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card 
-                className="bg-green-50 border-0 shadow-sm cursor-pointer hover:shadow-md"
-                onClick={() => handleEvaluationClick("opportunity")}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-medium text-gray-700">Opportunity</h3>
-                    <Info className="w-4 h-4 text-gray-500" />
-                  </div>
-                  {evaluations.opportunity.revealed ? (
-                    <>
-                      <div className="text-3xl font-bold text-gray-800">{evaluations.opportunity.score}</div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {evaluations.opportunity.score && evaluations.opportunity.score >= 9 ? "Exceptional" : 
-                         evaluations.opportunity.score && evaluations.opportunity.score >= 7 ? "Strong" : 
-                         evaluations.opportunity.score && evaluations.opportunity.score >= 5 ? "Moderate" : "Limited"}
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div className="bg-green-600 h-1.5 rounded-full" style={{ width: `${evaluations.opportunity.score ? evaluations.opportunity.score * 10 : 0}%` }}></div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-gray-600 py-4 text-center italic">Click to evaluate</div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="bg-red-50 border-0 shadow-sm cursor-pointer hover:shadow-md"
-                onClick={() => handleEvaluationClick("problem")}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-medium text-gray-700">Problem</h3>
-                    <Info className="w-4 h-4 text-gray-500" />
-                  </div>
-                  {evaluations.problem.revealed ? (
-                    <>
-                      <div className="text-3xl font-bold text-gray-800">{evaluations.problem.score}</div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {evaluations.problem.score && evaluations.problem.score >= 9 ? "Severe Pain" : 
-                         evaluations.problem.score && evaluations.problem.score >= 7 ? "Significant Issue" : 
-                         evaluations.problem.score && evaluations.problem.score >= 5 ? "Moderate Issue" : "Minor Issue"}
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div className="bg-red-600 h-1.5 rounded-full" style={{ width: `${evaluations.problem.score ? evaluations.problem.score * 10 : 0}%` }}></div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-gray-600 py-4 text-center italic">Click to evaluate</div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="bg-blue-50 border-0 shadow-sm cursor-pointer hover:shadow-md"
-                onClick={() => handleEvaluationClick("feasibility")}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-medium text-gray-700">Feasibility</h3>
-                    <Info className="w-4 h-4 text-gray-500" />
-                  </div>
-                  {evaluations.feasibility.revealed ? (
-                    <>
-                      <div className="text-3xl font-bold text-gray-800">{evaluations.feasibility.score}</div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {evaluations.feasibility.score && evaluations.feasibility.score >= 9 ? "Very Doable" : 
-                         evaluations.feasibility.score && evaluations.feasibility.score >= 7 ? "Achievable" : 
-                         evaluations.feasibility.score && evaluations.feasibility.score >= 5 ? "Challenging" : "Difficult"}
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${evaluations.feasibility.score ? evaluations.feasibility.score * 10 : 0}%` }}></div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-gray-600 py-4 text-center italic">Click to evaluate</div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card 
-                className="bg-orange-50 border-0 shadow-sm cursor-pointer hover:shadow-md"
-                onClick={() => handleEvaluationClick("whyNow")}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-medium text-gray-700">Why Now</h3>
-                    <Info className="w-4 h-4 text-gray-500" />
-                  </div>
-                  {evaluations.whyNow.revealed ? (
-                    <>
-                      <div className="text-3xl font-bold text-gray-800">{evaluations.whyNow.score}</div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {evaluations.whyNow.score && evaluations.whyNow.score >= 9 ? "Perfect Timing" : 
-                         evaluations.whyNow.score && evaluations.whyNow.score >= 7 ? "Good Time" : 
-                         evaluations.whyNow.score && evaluations.whyNow.score >= 5 ? "Acceptable" : "Better Wait"}
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div className="bg-orange-600 h-1.5 rounded-full" style={{ width: `${evaluations.whyNow.score ? evaluations.whyNow.score * 10 : 0}%` }}></div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-gray-600 py-4 text-center italic">Click to evaluate</div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Categorization */}
-            <Card className="bg-white border border-gray-200">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Categorization</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <div className="text-sm text-gray-500 mb-1">Type</div>
-                    <div className="font-medium text-gray-900">Platform</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 mb-1">Market</div>
-                    <div className="font-medium text-gray-900">B2C</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 mb-1">Target</div>
-                    <div className="font-medium text-gray-900">Homeowners</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 mb-1">Main Competitor</div>
-                    <div className="font-medium text-gray-900">Escrow.com</div>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <div className="text-sm text-gray-500 mb-2">Trend Analysis</div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    The rapidly growing escrow market, valued at $21.49 billion by 2033 with a 20% CAGR, alongside
-                    increasing concerns and regulatory support for secure, milestone-based payment solutions in the
-                    renovation industry, drive significant upward momentum.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Validate Section */}
-        <Card className="bg-white border border-gray-200">
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Validate</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { key: "userFlow" as ValidateAttribute, label: "User Flow" },
-                { key: "marketGap" as ValidateAttribute, label: "Market Gap" },
-                { key: "usability" as ValidateAttribute, label: "Usability" },
-                { key: "optimalSeo" as ValidateAttribute, label: "Optimal SEO" },
-                { key: "monetization" as ValidateAttribute, label: "Monetization" },
-                { key: "scalability" as ValidateAttribute, label: "Scalability" },
-                { key: "technicalComplexity" as ValidateAttribute, label: "Technical Complexity" },
-                { key: "differentiation" as ValidateAttribute, label: "Differentiation" },
-                { key: "adoptionBarriers" as ValidateAttribute, label: "Adoption Barriers" },
-              ].map(({ key, label }) => (
+        {/* Main Content */}
+        <div className="space-y-8">
+          {/* Idea Description */}
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Idea Description</h3>
                 <Button
-                  key={key}
-                  variant="outline"
-                  disabled={!validateAttributes[key].enabled}
-                  onClick={() => handleValidatedAttributeClick(key)}
-                  className={`w-full justify-start h-12 ${
-                    validateAttributes[key].validated
-                      ? "bg-green-50 border-green-200 text-green-800 hover:bg-green-100"
-                      : validateAttributes[key].enabled
-                        ? "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-                        : "bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed"
-                  }`}
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsEditingDescription(!isEditingDescription)}
+                  className="flex-shrink-0"
                 >
-                  {validateAttributes[key].validated && <Check className="w-4 h-4 mr-2" />}
-                  {label}
+                  {isEditingDescription ? <Check className="w-6 h-6" /> : <Pencil className="w-5 h-5" />}
                 </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+              <div className="text-gray-700 leading-relaxed">
+                {isEditingDescription ? (
+                  <Textarea
+                    value={ideaDescription}
+                    onChange={(e) => setIdeaDescription(e.target.value)}
+                    className="h-96 w-full bg-white"
+                  />
+                ) : (
+                  ideaDescription.split("\n\n").map((paragraph, index) => {
+                    if (paragraph.includes("\n- ")) {
+                      const parts = paragraph.split("\n- ")
+                      return (
+                        <div key={index}>
+                          <p className="mb-2">{parts[0]}</p>
+                          <ul className="list-disc pl-8 mb-4 space-y-1">
+                            {parts.slice(1).map((item, i) => (
+                              <li key={i}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )
+                    }
+                    return (
+                      <p key={index} className="mb-4">
+                        {paragraph}
+                      </p>
+                    )
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Evaluation Popups */}
+      {/* --- NEW INLINE IDEATION SECTION --- */}
+      <div className="max-w-4xl mx-auto space-y-6 mt-12">
+        <div className="text-center">
+          <h2 className="text-3xl font-serif text-gray-900">Continue Ideating</h2>
+          <p className="text-lg text-gray-600 mt-2">
+            Select a category or describe your own idea to generate the next node.
+          </p>
+        </div>
+
+        {/* Clickable Idea Type Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {ideaTypes.map((idea) => (
+                <button
+                    key={idea.title}
+                    onClick={() => setSelectedIdeaType(idea.title === selectedIdeaType ? null : idea.title)}
+                    className={`p-4 bg-white border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                        ${selectedIdeaType === idea.title ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`
+                    }
+                >
+                    <idea.icon className={`w-7 h-7 mb-2 ${selectedIdeaType === idea.title ? 'text-blue-600' : 'text-blue-500'}`} />
+                    <h3 className="text-sm font-semibold text-gray-800">{idea.title}</h3>
+                </button>
+            ))}
+        </div>
+
+        {/* Gemini-style Prompt Box */}
+        <div className="relative">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-2 flex items-center w-full">
+                <Textarea
+                    value={ideationPrompt}
+                    onChange={(e) => setIdeationPrompt(e.target.value)}
+                    placeholder={selectedIdeaType ? `Refine the "${selectedIdeaType}"...` : "Or generate a new node from a prompt..."}
+                    className="flex-grow bg-transparent border-none text-base text-gray-800 resize-none focus:outline-none focus:ring-0 h-12 p-2"
+                    rows={1}
+                />
+                <Button
+                    onClick={handleGenerateClick}
+                    disabled={(!ideationPrompt.trim() && !selectedIdeaType) || isGenerating}
+                    className="ml-2 rounded-lg w-10 h-10 p-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex-shrink-0"
+                >
+                    {isGenerating ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                        <ArrowUp className="w-5 h-5" />
+                    )}
+                </Button>
+            </div>
+        </div>
+      </div>
+      {/* --- END OF NEW SECTION --- */}
+
+
+      {/* Evaluation and Other Modals (Unchanged) */}
       {Object.entries(evaluations).map(
         ([key, state]) =>
           state.showPopup && (
@@ -599,7 +376,6 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
                 <DialogHeader>
                   <DialogTitle className="flex items-center justify-between text-gray-900">
                     {key.charAt(0).toUpperCase() + key.slice(1)} - Score: {state.score}/10
-                    
                   </DialogTitle>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-6 mt-4">
@@ -628,79 +404,6 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
             </Dialog>
           ),
       )}
-      
-      {/* Results Popup */}
-      <Dialog open={showResultsPopup} onOpenChange={setShowResultsPopup}>
-        <DialogContent className="bg-white border border-gray-200 max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-900">
-              {currentViewingAttribute && currentViewingAttribute.charAt(0).toUpperCase() + currentViewingAttribute.slice(1).replace(/([A-Z])/g, ' $1')}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {/* Stealth Pitch Section */}
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Stealth Pitch</h3>
-            <p className="text-gray-700 leading-relaxed">
-              {currentViewingAttribute ? resultsMap[currentViewingAttribute] : "No results available"}
-            </p>
-          </div>
-
-          {/* AI Suggestion Section */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">AI</span>
-                <h3 className="text-lg font-semibold text-gray-800">Suggestion</h3>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsEditingAiSuggestion(!isEditingAiSuggestion)}
-                className="h-8 w-8"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
-              {isEditingAiSuggestion ? (
-                <Textarea
-                  value={aiSuggestion}
-                  onChange={(e) => setAiSuggestion(e.target.value)}
-                  placeholder="AI suggestions will appear here..."
-                  className="min-h-[120px] bg-transparent border-0 focus-visible:ring-0 resize-none p-0"
-                />
-              ) : (
-                <p className="text-gray-700 min-h-[120px] whitespace-pre-wrap">
-                  {aiSuggestion || "AI suggestions will appear here..."}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-6 flex justify-end gap-3">
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 text-base font-semibold rounded-lg"
-              onClick={() => {
-                setShowGrantRequest(true)
-                setShowResultsPopup(false)
-              }}
-            >
-              Ask for Grant and Pitch
-            </Button>
-            <Button 
-              className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-2 text-base font-semibold rounded-lg"
-              onClick={() => {
-                // Add your stealth pitch logic here
-                setShowResultsPopup(false)
-              }}
-            >
-              Stealth Pitch Only
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Grant Request Modal */}
       <Dialog open={showGrantRequest} onOpenChange={setShowGrantRequest}>
@@ -708,7 +411,7 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-gray-900">Request Grant</DialogTitle>
           </DialogHeader>
-          
+
           {!isConnected ? (
             <div className="py-6 space-y-4">
               <div className="text-center">
@@ -763,7 +466,7 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
                   {error.message}
                 </div>
               )}
-              
+
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={handleGrantRequest}
@@ -785,13 +488,6 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
         </DialogContent>
       </Dialog>
 
-      {/* Ideate Modal - Replace the old implementation with our new component */}
-      <IdeationModal 
-        isOpen={showIdeateModal} 
-        onClose={() => setShowIdeateModal(false)} 
-        onValidate={handleIdeateValidate}
-      />
-
       {/* Fix Issues Modal (updated with tabs) */}
       <Dialog open={showFixIssuesModal} onOpenChange={setShowFixIssuesModal}>
         <DialogContent className="w-full max-w-full lg:max-w-6xl bg-white border border-gray-200 shadow-md rounded-2xl p-8">
@@ -799,9 +495,9 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
             <DialogTitle className="text-2xl font-bold text-gray-900 mb-6">Fix Issues</DialogTitle>
           </DialogHeader>
 
-          <Tabs 
-            defaultValue="opportunity" 
-            orientation="vertical" 
+          <Tabs
+            defaultValue="opportunity"
+            orientation="vertical"
             onValueChange={(value: string) => {
               setSelectedIssueType(value as EvaluationButton)
               setSelectedIssue("")
@@ -815,29 +511,29 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
                 <div className=" border border-gray-200 rounded-xl p-5 shadow-sm">
                   <h3 className="font-medium text-gray-700 mb-3">Select Category:</h3>
                   <TabsList className="flex flex-col h-auto space-y-2 p-2 rounded-lg">
-                    <TabsTrigger 
-                      value="opportunity" 
+                    <TabsTrigger
+                      value="opportunity"
                       className="justify-start px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
                     >
                       <div className="w-3 h-3 rounded-full bg-green-500 mr-3"></div>
                       Opportunity Issues
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="problem" 
+                    <TabsTrigger
+                      value="problem"
                       className="justify-start px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
                     >
                       <div className="w-3 h-3 rounded-full bg-red-500 mr-3"></div>
                       Problem Issues
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="feasibility" 
+                    <TabsTrigger
+                      value="feasibility"
                       className="justify-start px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
                     >
                       <div className="w-3 h-3 rounded-full bg-blue-500 mr-3"></div>
                       Feasibility Issues
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="whyNow" 
+                    <TabsTrigger
+                      value="whyNow"
                       className="justify-start px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
                     >
                       <div className="w-3 h-3 rounded-full bg-orange-500 mr-3"></div>
@@ -854,11 +550,10 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
                       <Button
                         key={index}
                         variant="outline"
-                        className={`w-full justify-start h-auto py-3 px-4 text-left ${
-                          selectedIssue === issue.title
+                        className={`w-full justify-start h-auto py-3 px-4 text-left ${selectedIssue === issue.title
                             ? "bg-blue-50 border-blue-200 text-blue-800"
                             : "bg-white"
-                        }`}
+                          }`}
                         onClick={() => {
                           setSelectedIssue(issue.title)
                           setUserSuggestion("")
@@ -913,7 +608,7 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
 
                     {/* Fix Button */}
                     <div className="flex justify-end">
-                      <Button 
+                      <Button
                         className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 text-base font-semibold rounded-lg"
                         disabled={!userSuggestion}
                       >
