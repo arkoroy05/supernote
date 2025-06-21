@@ -6,6 +6,14 @@ import 'reactflow/dist/style.css';
 import { Plus, X, Sparkles, Edit } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+// Extend Window interface to include our custom properties
+declare global {
+  interface Window {
+    __handleCreateNode?: (nodeId: string) => void;
+    __handleNodeClick?: (nodeId: string) => void;
+  }
+}
+
 // Types for node data
 interface NodeData {
     title: string;
@@ -104,7 +112,7 @@ const CreateNodeModal: React.FC<{
         <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
-                Create Node from "{parentTitle}"
+                Create Node from &ldquo;{parentTitle}&rdquo;
             </h2>
             <button
                 onClick={handleClose}
@@ -229,11 +237,11 @@ const nodeTypes = {
         {...props} 
         onCreateNode={(nodeId: string) => {
             // This will be set by the parent component
-            (window as any).__handleCreateNode?.(nodeId);
+            window.__handleCreateNode?.(nodeId);
         }}
         onNodeClick={(nodeId: string) => {
             // This will be set by the parent component
-            (window as any).__handleNodeClick?.(nodeId);
+            window.__handleNodeClick?.(nodeId);
         }}
         />
     ),
@@ -267,12 +275,12 @@ export default function GraphPage() {
 
     // Set global handlers for the node component
     useEffect(() => {
-        (window as any).__handleCreateNode = handleCreateNode;
-        (window as any).__handleNodeClick = handleNodeClick;
+        window.__handleCreateNode = handleCreateNode;
+        window.__handleNodeClick = handleNodeClick;
         
         return () => {
-        delete (window as any).__handleCreateNode;
-        delete (window as any).__handleNodeClick;
+        delete window.__handleCreateNode;
+        delete window.__handleNodeClick;
         };
     }, [handleCreateNode, handleNodeClick]);
 
@@ -437,7 +445,7 @@ export default function GraphPage() {
                 <h3 className="font-semibold text-gray-900 mb-2">How to use:</h3>
                 <ul className="text-sm text-gray-600 space-y-1">
                 <li>• Click any node to view full details</li>
-                <li>• Use "Create Node From Here" to expand ideas</li>
+                <li>• Use Create Node From Here to expand ideas</li>
                 <li>• Choose manual creation or AI generation</li>
                 <li>• Drag nodes to reorganize the mindmap</li>
                 <li>• Use controls to zoom and navigate</li>
