@@ -8,6 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge"
 import { Check, Info, Pencil } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { useIdeaAccelerator } from "@/app/hooks"
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants"
+import { type Abi } from 'viem'
+import { useAccount } from "wagmi"
 
 type EvaluationButton = "opportunity" | "problem" | "feasibility" | "whyNow"
 type ValidateAttribute = "userFlow" | "marketGap" | "usability" | "optimalSeo" | "monetization" | "scalability" | "technicalComplexity" | "differentiation" | "adoptionBarriers"
@@ -105,6 +110,30 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
   const [selectedIssueType, setSelectedIssueType] = useState<EvaluationButton>("opportunity")
   const [selectedIssue, setSelectedIssue] = useState<string>("")
   const [userSuggestion, setUserSuggestion] = useState<string>("")
+
+  const [showGrantRequest, setShowGrantRequest] = useState(false)
+  const [grantAmount, setGrantAmount] = useState("")
+  const [metadataURI, setMetadataURI] = useState("")
+
+  const {
+    useIsStaker,
+    useRequestGrant,
+  } = useIdeaAccelerator({
+    contractAddress: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI as Abi,
+  });
+
+  const { data: isStaker } = useIsStaker();
+  
+  const {
+    requestGrant,
+    isPending,
+    isConfirming,
+    error
+  } = useRequestGrant();
+
+  // Get wallet connection status
+  const { isConnected } = useAccount()
 
   const handleEvaluationClick = (type: EvaluationButton) => {
     // If score exists and is already revealed, show popup with pros/cons
@@ -274,6 +303,13 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
       }
     ]
   }
+
+  const handleGrantRequest = () => {
+    if (!grantAmount || !metadataURI) return;
+    requestGrant(metadataURI, grantAmount);
+  };
+
+  const isLoading = isPending || isConfirming;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -645,8 +681,17 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
             </div>
           </div>
 
-          {/* Stealth Pitch Button */}
-          <div className="mt-6 flex justify-end">
+          {/* Action Buttons */}
+          <div className="mt-6 flex justify-end gap-3">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 text-base font-semibold rounded-lg"
+              onClick={() => {
+                setShowGrantRequest(true)
+                setShowResultsPopup(false)
+              }}
+            >
+              Ask for Grant and Pitch
+            </Button>
             <Button 
               className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-2 text-base font-semibold rounded-lg"
               onClick={() => {
@@ -654,9 +699,92 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
                 setShowResultsPopup(false)
               }}
             >
-              Stealth Pitch
+              Stealth Pitch Only
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Grant Request Modal */}
+      <Dialog open={showGrantRequest} onOpenChange={setShowGrantRequest}>
+        <DialogContent className="bg-white border border-gray-200 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900">Request Grant</DialogTitle>
+          </DialogHeader>
+          
+          {!isConnected ? (
+            <div className="py-6 space-y-4">
+              <div className="text-center">
+                <p className="text-gray-700 mb-2">Please connect your wallet from the main navigation</p>
+                <p className="text-red-500 text-sm">You need to connect your wallet and stake at least 0.5 ETH to request grants</p>
+              </div>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => setShowGrantRequest(false)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : !isStaker ? (
+            <div className="py-6 space-y-4">
+              <div className="text-center">
+                <p className="text-gray-700 mb-2">Your wallet is connected, but you need to stake first</p>
+                <p className="text-red-500 text-sm">Stake at least 0.5 ETH to request grants</p>
+              </div>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => setShowGrantRequest(false)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Go to Staking Page
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Input
+                  type="number"
+                  placeholder="Amount in ETH"
+                  value={grantAmount}
+                  onChange={(e) => setGrantAmount(e.target.value)}
+                  min="0.1"
+                  step="0.1"
+                />
+                <Textarea
+                  placeholder="IPFS URI or metadata link containing project details"
+                  value={metadataURI}
+                  onChange={(e) => setMetadataURI(e.target.value)}
+                  className="min-h-[120px]"
+                />
+              </div>
+
+              {error && (
+                <div className="text-sm text-red-500">
+                  {error.message}
+                </div>
+              )}
+              
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={handleGrantRequest}
+                  disabled={isLoading || !grantAmount || !metadataURI}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  {isLoading ? "Submitting..." : "Submit Grant Request"}
+                </Button>
+                <Button
+                  onClick={() => setShowGrantRequest(false)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
