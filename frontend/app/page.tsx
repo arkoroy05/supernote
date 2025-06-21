@@ -8,9 +8,10 @@ import { Pricing } from "@/components/pricing";
 import { MarqueeAnimation } from "@/components/ui/marquee-effect";
 import { BackgroundLines } from "@/components/ui/background-lines";
 
-import React, {  useEffect} from 'react';
-import axios from 'axios';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from "@civic/auth/react";
+
 
 
 const demoPlans = [
@@ -101,52 +102,13 @@ const features = [
     },
 ];
 
-interface User {
-    name?: string;
-    walletAddress?: string;
-}
-
-interface ApiResponse {
-    isLoggedIn: boolean;
-    user?: User;
-    message?: string;
-    [key: string]: unknown;
-}
-
-// Create an Axios instance. `withCredentials: true` is ESSENTIAL for session cookies.
-const apiClient = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
-    withCredentials: true,
-});
-
 export default function Home() {
-    // const [isLoading, setIsLoading] = useState<boolean>(false);
     const router = useRouter();
-
-    const checkLoggedin = async () => {
-        // setIsLoading(true);
-        try {
-            const response = await apiClient.get<ApiResponse>('/auth/status');
-            if (response?.data?.isLoggedIn) {
-                router.push('starting');
-            }
-            // setIsLoading(false);
-            console.log(response);
-        }
-        catch (error: unknown) {
-            const errorData = error instanceof Error 
-                ? { message: error.message }
-                : axios.isAxiosError(error) && error.response 
-                    ? error.response.data 
-                    : { message: 'An unknown error occurred' };
-            console.log(JSON.stringify(errorData, null, 2));
-            // setIsLoading(false);
-        }
-    }
+    const { user, signIn } = useUser();
 
     useEffect(() => {
-        checkLoggedin();
-    }, []);
+        if (user) router.push('starting');
+    }, [user]);
     return (
         <div>
             <BackgroundLines className="flex items-center justify-center w-full flex-col px-4">
@@ -155,7 +117,8 @@ export default function Home() {
                     description="Map your thoughts, stress-test them with AI, and pitch safely — all before writing a single line of code."
                     primaryCta={{
                         text: "Start Ideating",
-                        href: `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
+                        // href: `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
+                        onClick: signIn,
                     }}
                     secondaryCta={{
                         text: "View us on GitHub",

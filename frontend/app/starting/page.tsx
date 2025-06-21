@@ -1,23 +1,24 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Paperclip, Send, LogOut, User } from 'lucide-react';
+import { Paperclip, Send, LogOut, User, LoaderCircle } from 'lucide-react';
 import { Typewriter } from '@/components/ui/typewriter';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@civic/auth/react';
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
+    Avatar,
+    AvatarImage,
+    AvatarFallback,
 } from "@/components/ui/avatar";
 
 // Aurora Background Component
@@ -92,33 +93,7 @@ export default function Starting() {
     const [ideaText, setIdeaText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    // Mock user name - in a real app, this would come from authentication
-    const userName = "User"; 
-    // Mock user avatar - in a real app, this would come from user profile
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-    const handleLogout = () => {
-        // Handle logout logic here
-        console.log("Logging out...");
-        // Redirect to login page or home
-        router.push('/');
-    };
-
-    const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            // Create a URL for the uploaded image
-            const imageUrl = URL.createObjectURL(file);
-            setAvatarUrl(imageUrl);
-            
-            // In a real application, you would upload this to your server
-            console.log("Avatar uploaded:", file.name);
-            // Example upload logic:
-            // const formData = new FormData();
-            // formData.append('avatar', file);
-            // axios.post('/api/user/avatar', formData);
-        }
-    };
+    const { user, signOut } = useUser();
 
     const handleSubmit = async () => {
         if (!ideaText.trim()) return;
@@ -134,10 +109,10 @@ export default function Starting() {
             router.push('/variations');
         }
         catch (error: unknown) {
-            const errorData = error instanceof Error 
+            const errorData = error instanceof Error
                 ? { message: error.message }
-                : axios.isAxiosError(error) && error.response 
-                    ? error.response.data 
+                : axios.isAxiosError(error) && error.response
+                    ? error.response.data
                     : { message: 'An unknown error occurred' };
             console.log(JSON.stringify(errorData, null, 2));
             setIsLoading(false);
@@ -157,45 +132,32 @@ export default function Starting() {
                 </div>
 
                 <nav className="flex items-center space-x-4">
-                    <Button 
-                        variant="ghost" 
+                    <Button
+                        variant="ghost"
                         className="font-medium"
                         onClick={() => router.push('/projects')}
                     >
                         Projects
                     </Button>
-                    
+
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="font-medium flex items-center gap-2 pl-3 pr-4">
+                            <Button variant="outline" className="font-medium flex items-center gap-2 pl-3 pr-4 bg-transparent border-transparent">
                                 <Avatar className="h-8 w-8">
-                                    <AvatarImage src={avatarUrl || ""} alt={userName} />
+                                    <AvatarImage src={user?.picture || ""} alt={user?.name} />
                                     <AvatarFallback className="bg-blue-400 text-blue-800">
-                                        {userName.charAt(0).toUpperCase()}
+                                        {user?.name?.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
-                                <span>{userName}</span>
+                                <span>{user?.name}</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuLabel>My Account</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="cursor-pointer">
-                                <label className="cursor-pointer flex items-center w-full">
-                                    <User className="h-4 w-4 mr-2" />
-                                    <span>Change Avatar</span>
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        className="hidden" 
-                                        onChange={handleAvatarUpload}
-                                    />
-                                </label>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 className="cursor-pointer flex items-center text-red-600"
-                                onClick={handleLogout}
+                                onClick={signOut}
                             >
                                 <LogOut className="h-4 w-4 mr-2" />
                                 <span>Log out</span>
@@ -250,7 +212,11 @@ export default function Starting() {
                                     disabled={isLoading || !ideaText.trim()}
                                     className={`bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg ${isLoading || !ideaText.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    <Send className="w-5 h-5" />
+                                    {isLoading ? (
+                                        <LoaderCircle className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <Send className="w-5 h-5" />
+                                    )}
                                 </button>
                             </div>
                         </div>

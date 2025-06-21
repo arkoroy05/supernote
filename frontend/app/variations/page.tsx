@@ -43,8 +43,37 @@ const IdeaAnalysisPage: React.FC = () => {
         }
     }, []);
 
-    const handleVariationClick = (): void => {
+    const handleVariationClick = (index: number): void => {
         window.location.href = '/graph';
+        const project = {
+            user: '',
+            name: '',
+            nodes: [{
+                id: '',
+                title: '',
+                data: { label: '', prompt: '' },
+                position: { x: 0, y: 0 },
+            }],
+            edges: [{
+                id: '',
+                source: '',
+                target: '',
+            }],
+            categorization: {
+                type: '',
+                market: '',
+                target: '',
+                main_competitors: '',
+                trendAnalysis: '',
+            },
+            projectRating: {
+                opportunity: 0,
+                problem: 0,
+                feasibility: 0,
+                why_now: 0,
+                feedback: '',
+            },
+        };
     };
 
     return (
@@ -70,10 +99,10 @@ const IdeaAnalysisPage: React.FC = () => {
                         </div>
                         <div className="prose prose-lg max-w-none">
                             {data?.analysis ? (
-                                <div 
+                                <div
                                     className="text-black leading-relaxed text-lg"
-                                    dangerouslySetInnerHTML={{ 
-                                        __html: `<p class="text-black leading-relaxed mb-4 text-lg">${markdownToHtml(data.analysis)}</p>` 
+                                    dangerouslySetInnerHTML={{
+                                        __html: `<p class="text-black leading-relaxed mb-4 text-lg">${markdownToHtml(data.analysis)}</p>`
                                     }}
                                 />
                             ) : (
@@ -98,11 +127,11 @@ const IdeaAnalysisPage: React.FC = () => {
                                 const colonIndex = variation.indexOf(':');
                                 const title = colonIndex !== -1 ? variation.substring(0, colonIndex).trim() : `Variation ${index + 1}`;
                                 const description = colonIndex !== -1 ? variation.substring(colonIndex + 1).trim() : variation;
-                                
+
                                 return (
                                     <div
                                         key={index}
-                                        onClick={handleVariationClick}
+                                        onClick={() => handleVariationClick(index)}
                                         className="bg-white rounded-2xl shadow-lg p-6 border border-blue-100 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:border-blue-300 group"
                                     >
                                         <div className="flex items-center justify-between mb-4">
