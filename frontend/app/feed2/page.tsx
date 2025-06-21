@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { ThumbsUp, ThumbsDown, Users, Coins, CheckCircle, XCircle, MessageCircle, Check, X, User, Home } from 'lucide-react';
+import { StakingStats } from '@/components/web3/StakingStats';
+import { StakersList } from '@/components/web3/StakersList';
 
 interface Comment {
   id: number;
@@ -188,9 +190,9 @@ const GrantFeed = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto flex">
+      <div className="w-full flex overflow-x-hidden">
         {/* Left Sidebar */}
-        <div className="w-56 bg-white border-r border-gray-200 p-4">
+        <div className="w-80 bg-white border-r border-gray-200 p-4">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-indigo-600">supernote</h1>
           </div>
@@ -201,12 +203,13 @@ const GrantFeed = () => {
               <span>Feed</span>
             </a>
           </nav>
+          <StakersList/>
         </div>
 
         {/* Main Feed */}
         <div className="flex-1">
           {/* Header */}
-          <div className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-sm bg-white/80">
+          <div className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-sm">
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Grant Feed</h2>
@@ -385,9 +388,9 @@ const GrantFeed = () => {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-80 bg-white border-l border-gray-200 p-6">
+        <div className="w-90 bg-white border-l border-gray-200 p-6">
           {/* Grant Pool Info */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
+          {/* <div className="bg-gray-50 rounded-xl p-4 mb-6">
             <h3 className="text-lg font-bold text-gray-900 mb-3">Grant Pool</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -405,7 +408,8 @@ const GrantFeed = () => {
                 <span className="font-bold text-gray-900">{totalStakers}</span>
               </div>
             </div>
-          </div>
+          </div> */}
+          <StakingStats/>
 
           {/* Join Grant Pool / Profile */}
           {!isStaker ? (

@@ -19,15 +19,15 @@ export function StakingStats() {
   const averageStake = totalStaked && stakers?.length ? Number(formatStakeAmount(totalStaked)) / stakers.length : 0
 
   return (
-    <div className="grid gap-6 md:grid-cols-3">
+    <div className="grid gap-6 grid-cols-2 grid-rows-2">
       <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 pt-6">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg font-semibold text-blue-900">Total Staked</CardTitle>
           <div className="p-2 bg-blue-200 rounded-lg">
             <TrendingUp className="h-5 w-5 text-blue-700" />
           </div>
         </CardHeader>
-        <CardContent className="pb-6">
+        <CardContent className="">
           {isTotalLoading ? (
             <Skeleton className="h-10 w-32 rounded" />
           ) : (
@@ -38,13 +38,13 @@ export function StakingStats() {
       </Card>
 
       <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 pt-6">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg font-semibold text-purple-900">Total Stakers</CardTitle>
           <div className="p-2 bg-purple-200 rounded-lg">
             <Users className="h-5 w-5 text-purple-700" />
           </div>
         </CardHeader>
-        <CardContent className="pb-6">
+        <CardContent className="">
           {isStakersLoading ? (
             <Skeleton className="h-10 w-16 rounded" />
           ) : (
@@ -54,14 +54,14 @@ export function StakingStats() {
         </CardContent>
       </Card>
 
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 pt-6">
+      <Card className="col-span-2 border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg font-semibold text-green-900">Average Stake</CardTitle>
           <div className="p-2 bg-green-200 rounded-lg">
             <BarChart3 className="h-5 w-5 text-green-700" />
           </div>
         </CardHeader>
-        <CardContent className="pb-6">
+        <CardContent className="">
           {isTotalLoading || isStakersLoading ? (
             <Skeleton className="h-10 w-32 rounded" />
           ) : (
