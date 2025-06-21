@@ -113,11 +113,9 @@ interface ApiResponse {
     [key: string]: any;
 }
 
-const API_BASE_URL = 'http://localhost:5000';
-
 // Create an Axios instance. `withCredentials: true` is ESSENTIAL for session cookies.
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
     withCredentials: true,
 });
 
@@ -153,7 +151,7 @@ export default function Home() {
                     description="Map your thoughts, stress-test them with AI, and pitch safely — all before writing a single line of code."
                     primaryCta={{
                         text: "Start Ideating",
-                        href: `${API_BASE_URL}/auth/login`,
+                        href: `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
                     }}
                     secondaryCta={{
                         text: "View us on GitHub",
