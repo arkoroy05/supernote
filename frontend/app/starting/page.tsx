@@ -1,25 +1,11 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Paperclip, Send, LogOut, User, LoaderCircle } from 'lucide-react';
+import { Paperclip, Send, LoaderCircle } from 'lucide-react';
 import { Typewriter } from '@/components/ui/typewriter';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@civic/auth/react';
-import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSeparator,
-    DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import {
-    Avatar,
-    AvatarImage,
-    AvatarFallback,
-} from "@/components/ui/avatar";
+import Navbar from '@/components/NavBar'; // Adjust the import path as needed
 
 // Aurora Background Component
 const AuroraBackground = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -93,7 +79,6 @@ export default function Starting() {
     const [ideaText, setIdeaText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const { user, signOut } = useUser();
 
     const handleSubmit = async () => {
         if (!ideaText.trim()) return;
@@ -122,50 +107,7 @@ export default function Starting() {
     return (
         <AuroraBackground className="bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
             {/* Header */}
-            <header className="flex justify-between items-center px-6 py-6 backdrop-blur-sm bg-transparent">
-                <div
-                    onClick={() => window.location.href = '/'}
-                    className="flex items-center text-2xl font-bold text-gray-900 cursor-pointer select-none"
-                >
-                    <img src="/favicon.ico" alt="Logo" className="w-8 h-8 mr-2 mt-1" />
-                    Supernote
-                </div>
-
-                <nav className="flex items-center space-x-4">
-                    <Button
-                        variant="ghost"
-                        className="font-medium"
-                        onClick={() => router.push('/projects')}
-                    >
-                        Projects
-                    </Button>
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="font-medium flex items-center gap-2 pl-3 pr-4 bg-transparent border-transparent">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage src={user?.picture || ""} alt={user?.name} />
-                                    <AvatarFallback className="bg-blue-400 text-blue-800">
-                                        {user?.name?.charAt(0).toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <span>{user?.name}</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                className="cursor-pointer flex items-center text-red-600"
-                                onClick={signOut}
-                            >
-                                <LogOut className="h-4 w-4 mr-2" />
-                                <span>Log out</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </nav>
-            </header>
+            <Navbar />
 
             {/* Main Content */}
             <main className="flex flex-col items-center justify-center px-6 py-20">
