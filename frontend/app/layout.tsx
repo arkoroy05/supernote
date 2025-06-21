@@ -21,6 +21,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Supernote",
   description: "The ideating platform for the future",
+  icons: {
+    icon: '/favicon.ico', // or .png/.svg if you're using that
+  },
 };
 
 export default async function RootLayout({

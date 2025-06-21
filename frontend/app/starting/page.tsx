@@ -78,8 +78,9 @@ export default function Starting() {
         <header className="flex justify-between items-center px-6 py-6 backdrop-blur-sm bg-transparent">
         <div
         onClick={() => window.location.href = '/'}
-        className="text-2xl font-bold text-gray-900 cursor-pointer select-none"
+        className="flex items-center text-2xl font-bold text-gray-900 cursor-pointer select-none"
         >
+            <img src="/favicon.ico" alt="Logo" className="w-8 h-8 mr-2 mt-1" />
             Supernote
         </div>
 
