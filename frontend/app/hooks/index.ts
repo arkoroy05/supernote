@@ -4,7 +4,7 @@ import {
     useWaitForTransactionReceipt,
     useAccount,
 } from 'wagmi';
-import type { Address, Hash } from 'viem';
+import type { Address, Abi } from 'viem';
 import { parseEther, formatEther } from 'viem';
 import { useMemo } from 'react';
   
@@ -19,7 +19,7 @@ export interface GrantRequest {
   
 export interface UseIdeaAcceleratorProps {
   contractAddress: `0x${string}`;
-  abi: any; // Contract ABI
+  abi: Abi;
 }
   
 export interface UseIdeaAcceleratorHooks {
@@ -331,7 +331,7 @@ export function useIdeaAccelerator({ contractAddress, abi }: UseIdeaAcceleratorP
 // Utility hooks for common patterns
 export function useGrantApprovalStatus(
   contractAddress: Address,
-  abi: any,
+  abi: Abi,
   grantId: number
 ) {
   const hooks = useIdeaAccelerator({ contractAddress, abi });

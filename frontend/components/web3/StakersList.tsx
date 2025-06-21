@@ -13,7 +13,7 @@ import { useIdeaAccelerator, formatStakeAmount } from "@/app/hooks";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAccount } from "wagmi";
-
+import { type Abi } from 'viem';
 function shortenAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
@@ -26,7 +26,7 @@ export function StakersList() {
     useStakeAmount,
   } = useIdeaAccelerator({
     contractAddress: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
+    abi: CONTRACT_ABI as Abi,
   });
 
   const { data: stakers, isLoading: isStakersLoading } = useStakers();
@@ -115,7 +115,7 @@ function StakerRow({ address, isCurrentUser, useStakeAmount }: StakerRowProps) {
         )}
       </TableCell>
       <TableCell className="text-right">
-        {stakeAmount && stakeAmount >= 500000000000000000n ? (
+        {stakeAmount && stakeAmount >= BigInt("500000000000000000") ? (
           <span className="text-green-500">Active</span>
         ) : (
           <span className="text-yellow-500">Below Minimum</span>

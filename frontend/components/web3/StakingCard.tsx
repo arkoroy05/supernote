@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input";
 import { useIdeaAccelerator, formatStakeAmount } from "@/app/hooks";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants";
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { type Abi } from 'viem';
 
 export function StakingCard() {
   const [stakeAmount, setStakeAmount] = useState("");
-  const { address } = useAccount();
   
   const {
     useStakeAmount,
@@ -19,7 +18,7 @@ export function StakingCard() {
     useUnstake,
   } = useIdeaAccelerator({
     contractAddress: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
+    abi: CONTRACT_ABI as Abi,
   });
 
   const { data: userStake } = useStakeAmount();
@@ -86,7 +85,7 @@ export function StakingCard() {
         <Button
           variant="outline"
           onClick={handleUnstake}
-          disabled={isLoading || !userStake || userStake <= 0n}
+          disabled={isLoading || !userStake || userStake <= BigInt(0)}
           className="w-full"
         >
           {isUnstakePending || isUnstakeConfirming ? "Unstaking..." : "Unstake"}

@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useIdeaAccelerator, formatStakeAmount } from "@/app/hooks";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { type Abi } from 'viem';
 export function StakingStats() {
   const {
     useTotalStaked,
     useStakers,
   } = useIdeaAccelerator({
     contractAddress: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
+    abi: CONTRACT_ABI as Abi,
   });
 
   const { data: totalStaked, isLoading: isTotalLoading } = useTotalStaked();

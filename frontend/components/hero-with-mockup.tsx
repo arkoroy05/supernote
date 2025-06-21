@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Mockup } from "@/components/ui/mockup"
+
 import { Glow } from "@/components/ui/glow"
 import { Github } from "lucide-react"
 

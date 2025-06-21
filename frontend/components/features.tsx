@@ -13,14 +13,12 @@ interface FeaturesProps {
     description: string;
     image: string;
   }[];
-  primaryColor?: string;
   progressGradientLight?: string;
   progressGradientDark?: string;
 }
 
 export function Features({
   features,
-  primaryColor,
   progressGradientLight,
   progressGradientDark,
 }: FeaturesProps) {

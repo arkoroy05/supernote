@@ -7,19 +7,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { useIdeaAccelerator } from "@/app/hooks";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants";
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { type Abi } from 'viem';
+
 
 export function GrantRequestCard() {
   const [amount, setAmount] = useState("");
   const [metadataURI, setMetadataURI] = useState("");
-  const { address } = useAccount();
+  
   
   const {
     useIsStaker,
     useRequestGrant,
   } = useIdeaAccelerator({
     contractAddress: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
+    abi: CONTRACT_ABI as Abi,
   });
 
   const { data: isStaker } = useIsStaker();

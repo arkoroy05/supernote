@@ -6,7 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { useIdeaAccelerator, formatGrantAmount, useGrantApprovalStatus } from "@/app/hooks";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/app/constants";
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
+import { type Abi } from 'viem';
+
 
 interface GrantCardProps {
   grantId: number;
@@ -19,14 +20,14 @@ function GrantCard({ grantId }: GrantCardProps) {
     useApproveGrant,
   } = useIdeaAccelerator({
     contractAddress: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
+    abi: CONTRACT_ABI as Abi,
   });
 
   const { data: grant, isLoading: isGrantLoading } = useGrant(grantId);
   const { data: hasApproved } = useHasApproved(grantId);
   const { approvalPercentage, isReadyForFunding, needsMoreApproval } = useGrantApprovalStatus(
     CONTRACT_ADDRESS,
-    CONTRACT_ABI,
+    CONTRACT_ABI as Abi,
     grantId
   );
 
@@ -103,7 +104,7 @@ export function GrantsList() {
   const [grants, setGrants] = useState<number[]>([]);
   const { useGrantCount } = useIdeaAccelerator({
     contractAddress: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
+    abi: CONTRACT_ABI as Abi,
   });
 
   const { data: grantCount } = useGrantCount();
