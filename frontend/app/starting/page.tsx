@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Paperclip, Send, LogOut, User } from 'lucide-react';
+import { Paperclip, Send, LogOut, User, LoaderCircle } from 'lucide-react';
 import { Typewriter } from '@/components/ui/typewriter';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -167,7 +167,7 @@ export default function Starting() {
                     
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="font-medium flex items-center gap-2 pl-3 pr-4">
+                            <Button variant="outline" className="font-medium flex items-center gap-2 pl-3 pr-4 bg-transparent border-transparent">
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage src={avatarUrl || ""} alt={userName} />
                                     <AvatarFallback className="bg-blue-400 text-blue-800">
@@ -250,7 +250,11 @@ export default function Starting() {
                                     disabled={isLoading || !ideaText.trim()}
                                     className={`bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg ${isLoading || !ideaText.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    <Send className="w-5 h-5" />
+                                    {isLoading ? (
+                                        <LoaderCircle className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <Send className="w-5 h-5" />
+                                    )}
                                 </button>
                             </div>
                         </div>
