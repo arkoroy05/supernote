@@ -1,10 +1,24 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Paperclip, Send } from 'lucide-react';
+import { Paperclip, Send, LogOut, User } from 'lucide-react';
 import { Typewriter } from '@/components/ui/typewriter';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/components/ui/avatar";
 
 // Aurora Background Component
 const AuroraBackground = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -78,6 +92,33 @@ export default function Starting() {
     const [ideaText, setIdeaText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    // Mock user name - in a real app, this would come from authentication
+    const userName = "User"; 
+    // Mock user avatar - in a real app, this would come from user profile
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+    const handleLogout = () => {
+        // Handle logout logic here
+        console.log("Logging out...");
+        // Redirect to login page or home
+        router.push('/');
+    };
+
+    const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            // Create a URL for the uploaded image
+            const imageUrl = URL.createObjectURL(file);
+            setAvatarUrl(imageUrl);
+            
+            // In a real application, you would upload this to your server
+            console.log("Avatar uploaded:", file.name);
+            // Example upload logic:
+            // const formData = new FormData();
+            // formData.append('avatar', file);
+            // axios.post('/api/user/avatar', formData);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!ideaText.trim()) return;
@@ -115,8 +156,52 @@ export default function Starting() {
                     Supernote
                 </div>
 
-                <nav className="flex items-center space-x-8">
-                    ...
+                <nav className="flex items-center space-x-4">
+                    <Button 
+                        variant="ghost" 
+                        className="font-medium"
+                        onClick={() => router.push('/projects')}
+                    >
+                        Projects
+                    </Button>
+                    
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="font-medium flex items-center gap-2 pl-3 pr-4">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={avatarUrl || ""} alt={userName} />
+                                    <AvatarFallback className="bg-blue-400 text-blue-800">
+                                        {userName.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span>{userName}</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="cursor-pointer">
+                                <label className="cursor-pointer flex items-center w-full">
+                                    <User className="h-4 w-4 mr-2" />
+                                    <span>Change Avatar</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="hidden" 
+                                        onChange={handleAvatarUpload}
+                                    />
+                                </label>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                                className="cursor-pointer flex items-center text-red-600"
+                                onClick={handleLogout}
+                            >
+                                <LogOut className="h-4 w-4 mr-2" />
+                                <span>Log out</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </nav>
             </header>
 
