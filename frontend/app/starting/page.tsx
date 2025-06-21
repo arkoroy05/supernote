@@ -1,8 +1,9 @@
 "use client"
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Paperclip, Send } from 'lucide-react';
 import { Typewriter } from '@/components/ui/typewriter';
+import axios from 'axios';
 
 // Aurora Background Component
 const AuroraBackground = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -73,6 +74,54 @@ const AuroraBackground = ({ children, className = "" }: { children: React.ReactN
 };
 
 export default function Starting() {
+    const [ideaText, setIdeaText] = useState<string>("");
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    const handleAnalyzeIdea = async () => {
+      if (!ideaText.trim()) return;
+      
+      setIsLoading(true);
+      try {
+        const baseURL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
+        const response = await axios.post(`${baseURL}/api/idea/analyze`, {
+          idea: ideaText
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log("Analysis response:", response.data);
+        
+        // Use the variations from the API response, or create meaningful fallbacks if needed
+        const variations = response.data.analysis.variations || [
+          `${response.data.idea} with a focus on sustainability`,
+          `${response.data.idea} targeting enterprise customers`,
+          `${response.data.idea} as a subscription service`,
+          `${response.data.idea} with mobile-first approach`,
+          `${response.data.idea} with freemium business model`
+        ];
+        
+        // Store the analysis data in localStorage to pass to the variations page
+        const analysisData = {
+          analysis: response.data.analysis.summary,
+          variations: variations
+        };
+        
+        console.log("Storing analysis data:", analysisData);
+        localStorage.setItem('ideaAnalysisData', JSON.stringify(analysisData));
+        
+        // Redirect to variations page instead of graph
+        window.location.href = '/variations';
+      } catch (error) {
+        console.error("Error analyzing idea:", error);
+        // Show error message to user
+        alert("There was an error analyzing your idea. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     return (
     <AuroraBackground className="bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
         {/* Header */}
@@ -128,14 +177,17 @@ export default function Starting() {
                 placeholder="How can Supernote help you today?"
                 className="w-full bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl px-6 py-6 pr-16 text-gray-900 placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-xl shadow-gray-100/50 transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-gray-200/50"
                 rows={4}
+                value={ideaText}
+                onChange={(e) => setIdeaText(e.target.value)}
                 />
                 <div className="absolute bottom-6 right-6 flex items-center space-x-3">
                 <button className="text-gray-600 hover:text-gray-800 transition-colors p-1 hover:bg-gray-100 rounded-lg">
                     <Paperclip className="w-5 h-5" />
                 </button>
                 <button 
-                  onClick={() => window.location.href = '/graph'} 
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg"
+                  onClick={handleAnalyzeIdea} 
+                  disabled={isLoading || !ideaText.trim()}
+                  className={`bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg ${(isLoading || !ideaText.trim()) ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                     <Send className="w-5 h-5" />
                 </button>
