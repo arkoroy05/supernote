@@ -107,7 +107,16 @@ export default function Home() {
     const { user, signIn } = useUser();
 
     useEffect(() => {
-        if (user) router.push('starting');
+        if (user) {
+            const keysToSync = ['access_token', 'id_token', 'refresh_token', 'oidc_session_expires_at']; // or dynamic
+            keysToSync.forEach((key) => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    document.cookie = `${key}=${value}; path=/; max-age=3600; secure; samesite=Strict`;
+                }
+            });
+            router.push('starting');
+        }
     }, [user]);
     return (
         <div>
