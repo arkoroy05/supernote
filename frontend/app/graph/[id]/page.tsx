@@ -33,6 +33,8 @@ import {
     ChevronDown,
     ChevronUp,
     Lightbulb,
+    ThumbsUp,
+    ThumbsDown,
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
@@ -204,6 +206,35 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
         feasibility: { score: 6 },
         whyNow: { score: 9 },
     });
+    interface ProjectRating {
+        opportunity: number;
+        problem: number;
+        feasibility: number;
+        why_now: number;
+        feedback: string;
+    }
+    const [projectRating, setProjectRating] = useState<ProjectRating | null>(null);
+    const [isRating, setIsRating] = useState(false);
+
+     // 2. Function to trigger the rating update
+    const triggerRatingUpdate = useCallback(async () => {
+        if (!projectId) return;
+        setIsRating(true);
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}/rate`,
+                {},
+                { withCredentials: true }
+            );
+            if (response.data && response.data.projectRating) {
+                setProjectRating(response.data.projectRating);
+            }
+        } catch (error) {
+            console.error("Failed to update project rating:", error);
+        } finally {
+            setIsRating(false);
+        }
+    }, [projectId]);
     
     const handleNodeClick = useCallback((nodeId: string) => {
         const clickedNode = nodes.find((node) => node.id === nodeId);
@@ -246,8 +277,9 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
             };
             setNodes((nds) => [...nds, frontendNode]);
             setEdges((eds) => [...eds, { ...newEdge, style: { stroke: "#8b5cf6", strokeWidth: 2 } }]);
+            triggerRatingUpdate();
         }
-    }, [nodes, selectedParentId, projectId, setNodes, setEdges]);
+    }, [nodes, selectedParentId, projectId, setNodes, setEdges, triggerRatingUpdate]);
 
     const loadProject = useCallback(async () => {
         setIsLoading(true);
@@ -271,6 +303,9 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                     animated: false,
                     style: { stroke: "#3b82f6", strokeWidth: 2 },
                 } as Edge)));
+                if (response.data.projectRating) {
+                    setProjectRating(response.data.projectRating);
+                }
             }
         } catch (error) {
             console.error("Error loading project:", error);
@@ -380,25 +415,60 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                                 <BarChart3 className="w-5 h-5 text-blue-600" />
                                 <span className="text-base font-semibold text-gray-800">Evaluate Idea Score</span>
                             </div>
-                            {isEvaluateOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                            {isRating ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                            ) : (
+                                isEvaluateOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />
+                            )}
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="p-4 bg-slate-50/70 space-y-3">
-                            <Card className="bg-green-50 border-green-200 shadow-sm"><CardContent className="p-3">
-                                <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-green-800">Opportunity</h3><span className="font-bold text-lg text-green-900">{evaluations.opportunity.score}/10</span></div>
-                                <div className="w-full bg-green-200 rounded-full h-1.5"><div className="bg-green-600 h-1.5 rounded-full" style={{ width: `${evaluations.opportunity.score * 10}%` }}></div></div>
-                            </CardContent></Card>
-                             <Card className="bg-red-50 border-red-200 shadow-sm"><CardContent className="p-3">
-                                <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-red-800">Problem Severity</h3><span className="font-bold text-lg text-red-900">{evaluations.problem.score}/10</span></div>
-                                <div className="w-full bg-red-200 rounded-full h-1.5"><div className="bg-red-600 h-1.5 rounded-full" style={{ width: `${evaluations.problem.score * 10}%` }}></div></div>
-                            </CardContent></Card>
-                             <Card className="bg-blue-50 border-blue-200 shadow-sm"><CardContent className="p-3">
-                                <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-blue-800">Feasibility</h3><span className="font-bold text-lg text-blue-900">{evaluations.feasibility.score}/10</span></div>
-                                <div className="w-full bg-blue-200 rounded-full h-1.5"><div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${evaluations.feasibility.score * 10}%` }}></div></div>
-                            </CardContent></Card>
-                            <Card className="bg-orange-50 border-orange-200 shadow-sm"><CardContent className="p-3">
-                                <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-orange-800">Why Now?</h3><span className="font-bold text-lg text-orange-900">{evaluations.whyNow.score}/10</span></div>
-                                <div className="w-full bg-orange-200 rounded-full h-1.5"><div className="bg-orange-500 h-1.5 rounded-full" style={{ width: `${evaluations.whyNow.score * 10}%` }}></div></div>
-                            </CardContent></Card>
+                        <CollapsibleContent className="p-4 bg-slate-50/70 space-y-4">
+                            {projectRating ? (
+                                <>
+                                    <Card className="bg-white border-gray-200"><CardContent className="p-3">
+                                        <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-gray-700">Opportunity</h3><span className="font-bold text-lg text-green-700">{projectRating.opportunity}/10</span></div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-green-500 h-2 rounded-full" style={{ width: `${projectRating.opportunity * 10}%` }}></div></div>
+                                    </CardContent></Card>
+                                    <Card className="bg-white border-gray-200"><CardContent className="p-3">
+                                        <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-gray-700">Problem Severity</h3><span className="font-bold text-lg text-red-700">{projectRating.problem}/10</span></div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-red-500 h-2 rounded-full" style={{ width: `${projectRating.problem * 10}%` }}></div></div>
+                                    </CardContent></Card>
+                                     <Card className="bg-white border-gray-200"><CardContent className="p-3">
+                                        <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-gray-700">Feasibility</h3><span className="font-bold text-lg text-blue-700">{projectRating.feasibility}/10</span></div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: `${projectRating.feasibility * 10}%` }}></div></div>
+                                    </CardContent></Card>
+                                    <Card className="bg-white border-gray-200"><CardContent className="p-3">
+                                        <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-gray-700">Why Now?</h3><span className="font-bold text-lg text-orange-700">{projectRating.why_now}/10</span></div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-orange-500 h-2 rounded-full" style={{ width: `${projectRating.why_now * 10}%` }}></div></div>
+                                    </CardContent></Card>
+                                    
+                                    <Card className="bg-white border-gray-200 mt-4">
+                                        <CardContent className="p-4">
+                                            <h3 className="font-semibold text-gray-800 mb-3">AI Feedback</h3>
+                                            <div className="text-sm text-gray-700 space-y-3">
+                                                {projectRating.feedback.split('\n').map((line, index) => {
+                                                    const isPro = line.toLowerCase().includes('pro:');
+                                                    const isCon = line.toLowerCase().includes('con:');
+                                                    if (!isPro && !isCon) return null;
+                                                    
+                                                    const Icon = isPro ? ThumbsUp : ThumbsDown;
+                                                    const color = isPro ? 'text-green-600' : 'text-red-600';
+                                                    
+                                                    return (
+                                                        <div key={index} className="flex items-start">
+                                                            <Icon className={`w-4 h-4 mr-2.5 mt-0.5 flex-shrink-0 ${color}`} />
+                                                            <span>{line.replace(/pro:|con:/i, '').trim()}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <p className="text-sm text-gray-500">Create a new node to generate the initial project evaluation.</p>
+                                </div>
+                            )}
                         </CollapsibleContent>
                     </Collapsible>
                     <div className="p-4 mt-auto border-t border-gray-200">
