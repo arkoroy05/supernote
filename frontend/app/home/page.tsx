@@ -96,7 +96,7 @@ export default function Home() {
   return (
     <div>
     <HeroWithMockup
-    title="Ideas are messy. We made a workspace that gets it"
+    title="Notion lets you write. We help you not mess up."
     description="Map your thoughts, stress-test them with AI, and pitch safely — all before writing a single line of code."
     primaryCta={{
       text: "Start Ideating",
