@@ -31,6 +31,8 @@ export default function Component() {
   const [selectedIdeateAttribute, setSelectedIdeateAttribute] = useState<IdeateAttribute>("userFlow")
   const [results, setResults] = useState("")
   const [isEditingResults, setIsEditingResults] = useState(false)
+  const [aiSuggestion, setAiSuggestion] = useState("")
+  const [isEditingAiSuggestion, setIsEditingAiSuggestion] = useState(false)
 
   const [ideaTitle, setIdeaTitle] = useState(
     "Renovation Payment Escrow - Financial Protection for Homeowners ($450B Market)",
@@ -596,17 +598,64 @@ Every anxious homeowner and reliable contractor needs this missing layer of secu
       
       {/* Results Popup */}
       <Dialog open={showResultsPopup} onOpenChange={setShowResultsPopup}>
-        <DialogContent className="bg-white border border-gray-200">
+        <DialogContent className="bg-white border border-gray-200 max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between text-gray-900">
-              {currentViewingAttribute && currentViewingAttribute.charAt(0).toUpperCase() + currentViewingAttribute.slice(1).replace(/([A-Z])/g, ' $1')} Results
-             
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              {currentViewingAttribute && currentViewingAttribute.charAt(0).toUpperCase() + currentViewingAttribute.slice(1).replace(/([A-Z])/g, ' $1')}
             </DialogTitle>
           </DialogHeader>
-          <div className="mt-4 max-h-[300px] overflow-y-auto">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+          
+          {/* Stealth Pitch Section */}
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Stealth Pitch</h3>
+            <p className="text-gray-700 leading-relaxed">
               {currentViewingAttribute ? resultsMap[currentViewingAttribute] : "No results available"}
             </p>
+          </div>
+
+          {/* AI Suggestion Section */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">AI</span>
+                <h3 className="text-lg font-semibold text-gray-800">Suggestion</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsEditingAiSuggestion(!isEditingAiSuggestion)}
+                className="h-8 w-8"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
+              {isEditingAiSuggestion ? (
+                <Textarea
+                  value={aiSuggestion}
+                  onChange={(e) => setAiSuggestion(e.target.value)}
+                  placeholder="AI suggestions will appear here..."
+                  className="min-h-[120px] bg-transparent border-0 focus-visible:ring-0 resize-none p-0"
+                />
+              ) : (
+                <p className="text-gray-700 min-h-[120px] whitespace-pre-wrap">
+                  {aiSuggestion || "AI suggestions will appear here..."}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Stealth Pitch Button */}
+          <div className="mt-6 flex justify-end">
+            <Button 
+              className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-2 text-base font-semibold rounded-lg"
+              onClick={() => {
+                // Add your stealth pitch logic here
+                setShowResultsPopup(false)
+              }}
+            >
+              Stealth Pitch
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
