@@ -118,12 +118,7 @@ export default function Starting() {
         </div>
 
         <nav className="flex items-center space-x-8">
-            <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors font-medium">
-            Community
-            </a>
-            <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors font-medium">
-            Pricing
-            </a>
+            ...
         </nav>
         </header>
 
@@ -150,7 +145,7 @@ export default function Starting() {
             </div>
              </h1>
             <p className="text-2xl text-gray-700 mb-16 font-light leading-relaxed">
-            Turn raw ideas into real startups — one smart node at a time.
+            Turn ideas into real startups — one smart node at a time.
             </p>
 
             {/* Input Section */}
