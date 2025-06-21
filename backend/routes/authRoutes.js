@@ -1,9 +1,51 @@
 import express from 'express';
-import { verifyToken } from '../controllers/authController.js';
 
 const router = express.Router();
 
+// Redirects the user to the Civic login page
+router.get('/login', async (req, res) => {
+  const url = await req.civicAuth.buildLoginUrl();
+  res.redirect(url.toString());
+});
 
-router.post('/verify', verifyToken);
+// Handles the final step of logging out
+router.get('/logout', async (req, res) => {
+  try {
+    // Delete our local session cookie
+    await req.storage.delete('civic-session');
+    // Build the URL to log out of Civic's central service
+    const url = await req.civicAuth.buildLogoutRedirectUrl();
+    // Redirect the user's browser
+    res.redirect(url.toString());
+  } catch (error) {
+    console.error('Error during logout:', error);
+    res.redirect(process.env.FRONTEND_URL); // Redirect home on failure
+  }
+});
+
+// The URL that Civic redirects back to after a successful login
+router.get('/callback', async (req, res) => {
+  const { code, state } = req.query;
+  // Exchanges the authorization code for a session
+  await req.civicAuth.resolveOAuthAccessCode(code, state);
+  // Redirect the user back to the frontend application
+  res.redirect(process.env.FRONTEND_URL);
+});
+
+// An API route to check the user's current login status from the frontend
+router.get('/status', async (req, res) => {
+    if (!(await req.civicAuth.isLoggedIn())) {
+        return res.status(200).json({ isLoggedIn: false });
+    }
+    try {
+        const user = await req.civicAuth.getUser();
+        res.status(200).json({
+            isLoggedIn: true,
+            user: { name: user?.name, walletAddress: user?.walletAddress }
+        });
+    } catch (error) {
+        res.status(500).json({ isLoggedIn: false, message: 'Server error' });
+    }
+});
 
 export default router;
