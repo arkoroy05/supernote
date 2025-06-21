@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, use } from "react";
+import React, { useState, useCallback, useEffect, use, useRef } from "react";
 import {
     ReactFlow,
     MiniMap,
@@ -19,18 +19,8 @@ import {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import {
-    X,
     ChevronRight,
     WandSparkles,
-    Workflow,
-    MousePointerClick,
-    Megaphone,
-    HelpCircle,
-    Coins,
-    BarChart3,
-    Cpu,
-    Sparkles,
-    ShieldAlert,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -50,27 +40,6 @@ interface NodeData {
     fullContent?: string;
 }
 
-// Icon Props Type
-interface IconProps {
-    className?: string;
-    size?: number;
-}
-
-// Idea Types Array
-type IdeaType = { title: string; icon: React.FC<IconProps> };
-const ideaTypes: IdeaType[] = [
-    { title: "User Flow", icon: Workflow },
-    { title: "Usability", icon: MousePointerClick },
-    { title: "Marketing", icon: Megaphone },
-    { title: "Need", icon: HelpCircle },
-    { title: "Monetization", icon: Coins },
-    { title: "Scalability", icon: BarChart3 },
-    { title: "Technical Complexity", icon: Cpu },
-    { title: "Differentiation", icon: Sparkles },
-    { title: "Adoption Barriers", icon: ShieldAlert },
-];
-
-// Custom Node Component
 const IdeaNode: React.FC<
     NodeProps<NodeData> & {
         onCreateNode: (nodeId: string) => void;
@@ -139,7 +108,7 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
         try {
             const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}`, { withCredentials: true });
             if (response?.data) {
-                setNodes(response.data.nodes.map((snode: any) => ({
+                setNodes(response.data.nodes.map((snode: {id: string, title: string, position: {x: number, y: number}, data: {label: string}}) => ({
                     id: snode.id,
                     type: "ideaNode",
                     position: { x: snode.position.x, y: snode.position.y },
@@ -149,7 +118,7 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                         fullContent: snode.data.label,
                     },
                 } as Node<NodeData>)));
-                setEdges(response.data.edges.map((sedge: any) => ({
+                setEdges(response.data.edges.map((sedge: {id: string, source: string, target: string}) => ({
                     id: sedge.id,
                     source: sedge.source,
                     target: sedge.target,
@@ -163,6 +132,32 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
             setIsLoading(false);
         }
     }, [projectId, setNodes, setEdges]);
+
+    const lastUpdatePositionsRef = useRef<number | null>(null);
+
+
+    const updateNodePositions = useCallback(async () => {
+        const now = Date.now();
+        if (lastUpdatePositionsRef.current && now - lastUpdatePositionsRef.current < 1000) {
+            // Dismiss if last update was less than 2 seconds ago
+            return;
+        }
+        lastUpdatePositionsRef.current = now;
+
+        try {
+            await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}/nodes/positions`,
+                {
+                    updates: nodes.map((node: Node) => ({
+                        id: node.id,
+                        position: { x: node.position.x, y: node.position.y }
+                    }))
+                }, { withCredentials: true });
+        } catch (error) {
+            console.error("Error loading project:", error);
+        } finally {
+
+        }
+    }, [projectId, nodes]);
 
     useEffect(() => {
         window.__handleNodeClick = handleNodeClick;
@@ -197,7 +192,10 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={onNodesChange}
+                onNodesChange={(changes) => {
+                    onNodesChange(changes);
+                    updateNodePositions();
+                }}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}
