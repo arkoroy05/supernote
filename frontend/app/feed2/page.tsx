@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useCallback } from 'react';
+import Link from 'next/link';
 import { ThumbsUp, ThumbsDown, CheckCircle, XCircle, MessageCircle, Check, X, Home } from 'lucide-react';
 import { StakingStats } from '@/components/web3/StakingStats';
 import { StakersList } from '@/components/web3/StakersList';
@@ -280,12 +281,12 @@ const GrantFeed = () => {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Grant Feed</h2>
                 {isStaker && (
-                  <a 
+                  <Link 
                     href="/idea"
                     className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm"
                   >
                     <span>Go to Ideas</span>
-                  </a>
+                  </Link>
                 )}
               </div>
             </div>
@@ -492,12 +493,12 @@ const GrantFeed = () => {
                 <p className="text-sm text-gray-600 mb-3">
                   You&apos;re eligible to vote on grant approvals and request grants.
                 </p>
-                <a 
+                <Link 
                   href="/idea"
                   className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm flex items-center justify-center"
                 >
                   Go to Idea Page
-                </a>
+                </Link>
               </div>
             )
           )}

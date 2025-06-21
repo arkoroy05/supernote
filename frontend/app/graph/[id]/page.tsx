@@ -192,6 +192,15 @@ const nodeTypes = {
     ),
 };
 
+// ProjectRating interface definition
+interface ProjectRating {
+    opportunity: number;
+    problem: number;
+    feasibility: number;
+    why_now: number;
+    feedback: string;
+}
+
 export default function GraphPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: projectId } = use(params);
     const router = useRouter();
@@ -203,19 +212,6 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
     const [selectedParentTitle, setSelectedParentTitle] = useState<string>("");
     const [isIdeateOpen, setIsIdeateOpen] = useState(true);
     const [isEvaluateOpen, setIsEvaluateOpen] = useState(true);
-    const [evaluations] = useState({
-        opportunity: { score: 9 },
-        problem: { score: 10 },
-        feasibility: { score: 6 },
-        whyNow: { score: 9 },
-    });
-    interface ProjectRating {
-        opportunity: number;
-        problem: number;
-        feasibility: number;
-        why_now: number;
-        feedback: string;
-    }
     const [projectRating, setProjectRating] = useState<ProjectRating | null>(null);
     const [isRating, setIsRating] = useState(false);
 
