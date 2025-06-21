@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, use } from "react";
+import React, { useState, useCallback, useEffect, use, useRef } from "react";
 import {
     ReactFlow,
     MiniMap,
@@ -19,7 +19,6 @@ import {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import {
-    X,
     ChevronRight,
     WandSparkles,
     Workflow,
@@ -31,8 +30,6 @@ import {
     Cpu,
     Sparkles,
     ShieldAlert,
-    Check,
-    Info,
     ChevronDown,
     ChevronUp,
     Lightbulb,
@@ -81,7 +78,6 @@ const ideaTypes: IdeaType[] = [
     { title: "Adoption Barriers", icon: ShieldAlert },
 ];
 
-// Custom Node Component
 const IdeaNode: React.FC<
     NodeProps<NodeData> & {
         onCreateNode: (nodeId: string) => void;
@@ -258,7 +254,7 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
         try {
             const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}`, { withCredentials: true });
             if (response?.data) {
-                setNodes(response.data.nodes.map((snode: any) => ({
+                setNodes(response.data.nodes.map((snode: {id: string, title: string, position: {x: number, y: number}, data: {label: string}}) => ({
                     id: snode.id,
                     type: "ideaNode",
                     position: { x: snode.position.x, y: snode.position.y },
@@ -268,7 +264,7 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                         fullContent: snode.data.label,
                     },
                 } as Node<NodeData>)));
-                setEdges(response.data.edges.map((sedge: any) => ({
+                setEdges(response.data.edges.map((sedge: {id: string, source: string, target: string}) => ({
                     id: sedge.id,
                     source: sedge.source,
                     target: sedge.target,
@@ -282,7 +278,33 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
             setIsLoading(false);
         }
     }, [projectId, setNodes, setEdges]);
-    
+
+    const lastUpdatePositionsRef = useRef<number | null>(null);
+
+
+    const updateNodePositions = useCallback(async () => {
+        const now = Date.now();
+        if (lastUpdatePositionsRef.current && now - lastUpdatePositionsRef.current < 1000) {
+            // Dismiss if last update was less than 2 seconds ago
+            return;
+        }
+        lastUpdatePositionsRef.current = now;
+
+        try {
+            await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}/nodes/positions`,
+                {
+                    updates: nodes.map((node: Node) => ({
+                        id: node.id,
+                        position: { x: node.position.x, y: node.position.y }
+                    }))
+                }, { withCredentials: true });
+        } catch (error) {
+            console.error("Error loading project:", error);
+        } finally {
+
+        }
+    }, [projectId, nodes]);
+
     useEffect(() => {
         window.__handleNodeClick = handleNodeClick;
         window.__handleCreateNode = handleCreateNode;
@@ -319,19 +341,22 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
             <div className="flex h-full w-full">
                 <div className="flex-grow h-full">
                     <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnect={onConnect}
-                        nodeTypes={nodeTypes}
-                        fitView
-                        className="bg-gray-100"
-                    >
-                        <Controls className="bg-white shadow-lg rounded-lg" />
-                        <MiniMap className="bg-white rounded-lg shadow-lg border border-gray-200" nodeColor="#3b82f6" />
-                        <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#ddd" />
-                    </ReactFlow>
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={(changes) => {
+                    onNodesChange(changes);
+                    updateNodePositions();
+                }}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                nodeTypes={nodeTypes}
+                fitView
+                className="bg-gray-50"
+            >
+                <Controls className="bg-white shadow-lg rounded-lg" />
+                <MiniMap className="bg-white rounded-lg shadow-lg" nodeColor="#3b82f6" />
+                <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
+            </ReactFlow>
                 </div>
 
                 <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto flex flex-col shadow-2xl z-10">
