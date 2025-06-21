@@ -6,6 +6,7 @@ import { Brain, BrainCog } from "lucide-react";
 import { SparklesText } from "@/components/ui/sparkles-text";
 import { Pricing } from "@/components/pricing";
 import { MarqueeAnimation } from "@/components/ui/marquee-effect";
+import { BackgroundLines } from "@/components/ui/background-lines";
 
 const demoPlans = [
     {
@@ -98,24 +99,26 @@ const features= [
 export default function Home() {
   return (
     <div>
-    <HeroWithMockup
-    title="Notion lets you write. We help you not mess up."
-    description="Map your thoughts, stress-test them with AI, and pitch safely — all before writing a single line of code."
-    primaryCta={{
-      text: "Start Ideating",
-      href: "/",
-    }}
-    secondaryCta={{
-      text: "View us on GitHub",
-      href: "https://github.com/your-ai-platform",
-    }}
-    mockupImage={{
-      alt: "AI Platform Dashboard",
-      width: 1248,
-      height: 765,
-      src: "/hero.jpg"
-    }}
-  />
+        <BackgroundLines className="flex items-center justify-center w-full flex-col px-4">
+            <HeroWithMockup
+                title="From Shower Thought to Funded Project."
+                description="Map your thoughts, stress-test them with AI, and pitch safely — all before writing a single line of code."
+                primaryCta={{
+                text: "Start Ideating",
+                href: "/starting",
+                }}
+                secondaryCta={{
+                text: "View us on GitHub",
+                href: "https://github.com/arkoroy05/supernote",
+                }}
+                mockupImage={{
+                alt: "AI Platform Dashboard",
+                width: 1248,
+                height: 765,
+                src: "/hero.jpg"
+                }}
+            />
+        </BackgroundLines>
   <div className="flex flex-col gap-4">
       <MarqueeAnimation
         direction="left"

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Plus, Search, Calendar, Tag, ArrowRight, Network, Clock } from 'lucide-react';
+import { Plus, Search,  Tag, ArrowRight, Network, Clock } from 'lucide-react';
 
 interface Project {
   id: string;

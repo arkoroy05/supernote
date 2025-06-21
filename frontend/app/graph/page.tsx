@@ -19,11 +19,9 @@ import {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import {
-    Plus,
+
     X,
-    Edit,
     ChevronRight,
-    Sparkle,
     WandSparkles,
     Workflow,
     MousePointerClick,
@@ -53,13 +51,19 @@ interface NodeData {
     fullContent?: string;
 }
 
+// Define a proper type for the icon props
+interface IconProps {
+    className?: string;
+    size?: number;
+}
+
 const IdeaItem = ({
     title,
     icon: Icon,
     onClick,
 }: {
     title: string;
-    icon: React.FC<any>;
+    icon: React.FC<IconProps>;
     onClick: () => void;
 }) => {
     return (
@@ -72,7 +76,8 @@ const IdeaItem = ({
         </button>
     );
 };
-type IdeaType = { title: string; icon: React.FC<any> };
+
+type IdeaType = { title: string; icon: React.FC<IconProps> };
 const ideaTypes: IdeaType[] = [
     { title: "User Flow", icon: Workflow },
     { title: "Usability", icon: MousePointerClick },
