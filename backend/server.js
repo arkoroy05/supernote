@@ -114,6 +114,18 @@ app.get('/api/auth/status', authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/api/auth/pritam', authMiddleware, async (req, res) => {
+  try {
+    const user = await req.civicAuth.getUser();
+    console.log('Pritam route accessed by:', user?.name || 'Unknown User');
+    res.status(200).json({
+      pritam: 'Pritam bhery Gay'
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error retrieving user data' });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/idea', authMiddleware, ideaRoutes);
 app.use('/api/project', authMiddleware, projectRoutes);

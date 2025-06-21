@@ -1,5 +1,3 @@
-// app/page.tsx
-
 "use client"; // This is a Client Component
 
 import React, { useState, useEffect } from 'react';
@@ -14,13 +12,6 @@ interface User {
   name: string;
   walletAddress: string;
 }
-
-interface Idea {
-  _id: string;
-  title: string;
-  // Add other properties of your Idea model here
-}
-
 
 // --- Main Page Component ---
 
@@ -61,7 +52,7 @@ const Page = () => {
 
   const handleLogout = () => {
     // Redirect to the backend's logout route.
-    window.location.href = `${API_BASE_URL}/auth/logout`;
+    window.location.href = `${API_BASE_URL}/api/auth/logout`;
   };
 
   // --- Render Logic ---
@@ -108,21 +99,33 @@ const Page = () => {
   );
 };
 
-// --- Child Component for Fetching Protected Data ---
+// --- Child Component for Fetching Protected Data (Corrected) ---
+
+// Define the expected API response structure for type safety.
+interface IdeasResponse {
+  pritam: string; // Based on the error, the key is 'pritam'. Adjust if the value is not a string.
+}
 
 const ProtectedContent = () => {
-  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [ideas, setIdeas] = useState('');
   const [message, setMessage] = useState('');
 
   const fetchIdeas = async () => {
     setMessage('Loading your ideas...');
-    setIdeas([]);
+    setIdeas('');
     try {
-      const response = await axios.get<Idea[]>(`${API_BASE_URL}/api/idea`, {
+      // Tell axios to expect an object with a 'pritam' key.
+      const response = await axios.get<IdeasResponse>(`${API_BASE_URL}/api/auth/pritam`, {
         withCredentials: true,
       });
-      setIdeas(response.data);
-      setMessage(response.data.length === 0 ? 'No ideas found.' : '');
+
+      // FIX: Access the 'pritam' property from the response data
+      const ideasData = response.data.pritam;
+      setIdeas(ideasData);
+
+      // Also, base the "No ideas found" message on the actual data's length.
+      setMessage(ideasData.length === 0 ? 'No ideas found.' : '');
+
     } catch (error) {
       setMessage('Failed to fetch ideas. Your session may have expired.');
       console.error(error);
@@ -134,13 +137,8 @@ const ProtectedContent = () => {
       <h3>Your Protected Data</h3>
       <button onClick={fetchIdeas}>Fetch My Ideas</button>
       <p><em>{message}</em></p>
-      {ideas.length > 0 && (
-        <ul>
-          {ideas.map((idea) => (
-            <li key={idea._id}>{idea.title}</li>
-          ))}
-        </ul>
-      )}
+      {/* 'ideas' is now a string and can be rendered without error. */}
+      <p><strong>{ideas}</strong></p>
     </div>
   );
 }
