@@ -5,6 +5,7 @@ import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser, JsonOutputParser } from '@langchain/core/output_parsers';
 import { MongoDBAtlasVectorSearch } from '@langchain/mongodb';
 import { collection } from '../config/db.js';
+import { z } from 'zod';
 
 
 const buildFullGraphContext = (nodes, edges) => {
@@ -99,7 +100,6 @@ export const createProject = async (req, res) => {
 
 
 export const converseWithNode = async (req, res) => {
-    // Note: The 'title' from the request body is no longer used.
     const { parentNodeId, prompt, position, useRAG } = req.body;
     const { projectId } = req.params;
 
@@ -120,23 +120,25 @@ export const converseWithNode = async (req, res) => {
         }
 
         const conversation_history = buildHierarchicalContext(project.nodes, project.edges, parentNodeId);
+        
+        // Define a Zod schema to enforce the AI's output structure.
+        const titleAndContentSchema = z.object({
+            title: z.string().describe("A concise, 5-10 word title for the generated content."),
+            content: z.string().describe("The full, detailed response to the user's question."),
+        });
 
-        // Updated Prompt Template to request JSON output with a title and content
+        // The prompt no longer needs to mention JSON formatting.
         const llmPromptTemplate = PromptTemplate.fromTemplate(
-            `You are an expert research assistant. Given the conversation history, intelligently answer the user's question.
-            
-            Based on the response you generate, create a concise, descriptive title for it (5-10 words).
+            `You are an expert research assistant. Given the conversation history, intelligently answer the user's question and provide a suitable title for your response.
 
             Conversation History (for context):\n{conversation_history}\n\n
-            User's Question:\n{question}\n\n
-
-            Your final output MUST be a single JSON object with exactly two keys: "title" and "content".
-            Example: {{"title": "A Concise, Generated Title", "content": "The full, detailed answer to the user's question goes here."}}
-
-            JSON Response:`
+            User's Question:\n{question}\n\n`
         );
 
-        // Updated chain to include the JsonOutputParser
+        // Bind the schema to the model to enforce structured output.
+        // This is much more reliable than parsing raw text.
+        const structuredOutputModel = chatModel.withStructuredOutput(titleAndContentSchema);
+
         const chain = RunnableSequence.from([
             {
                 question: (input) => input.question,
@@ -153,18 +155,16 @@ export const converseWithNode = async (req, res) => {
                 }
             },
             llmPromptTemplate,
-            chatModel,
-            new JsonOutputParser(),
+            structuredOutputModel, // Use the new model with enforced structured output
         ]);
 
-        // The result is now an object: { title: string, content: string }
+        // The result will be a clean, validated object: { title: string, content: string }
         const result = await chain.invoke({
             question: prompt,
             conversation_history: conversation_history,
             userId: userId
         });
 
-        // Use the AI-generated title and content for the new node
         const newNode = {
             id: `node_${Date.now()}`,
             data: { label: result.content, prompt: prompt },
