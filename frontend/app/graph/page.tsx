@@ -57,25 +57,26 @@ interface IconProps {
     size?: number;
 }
 
-const IdeaItem = ({
-    title,
-    icon: Icon,
-    onClick,
-}: {
-    title: string;
-    icon: React.FC<IconProps>;
-    onClick: () => void;
-}) => {
-    return (
-        <button
-            onClick={onClick}
-            className="w-full p-2 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left flex items-center space-x-3"
-        >
-            <Icon className="w-5 h-5 text-blue-500" />
-            <h3 className="font-medium text-gray-900">{title}</h3>
-        </button>
-    );
-};
+// Remove the unused IdeaItem component
+// const IdeaItem = ({
+//     title,
+//     icon: Icon,
+//     onClick,
+// }: {
+//     title: string;
+//     icon: React.FC<IconProps>;
+//     onClick: () => void;
+// }) => {
+//     return (
+//         <button
+//             onClick={onClick}
+//             className="w-full p-2 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left flex items-center space-x-3"
+//         >
+//             <Icon className="w-5 h-5 text-blue-500" />
+//             <h3 className="font-medium text-gray-900">{title}</h3>
+//         </button>
+//     );
+// };
 
 type IdeaType = { title: string; icon: React.FC<IconProps> };
 const ideaTypes: IdeaType[] = [
@@ -150,12 +151,12 @@ const CreateNodeModal: React.FC<{
     onCreateFromPrompt: (prompt: string) => void;
     parentTitle: string;
 }> = ({ isOpen, onClose, onCreateManual, onCreateFromPrompt, parentTitle }) => {
-    const [mode, setMode] = useState<"select" | "manual" | "prompt">("select");
+    const [showPromptInput, setShowPromptInput] = useState(false);
     const [prompt, setPrompt] = useState("some default prompt");
     const [isGenerating, setIsGenerating] = useState(false);
 
     const resetModal = () => {
-        setMode("select");
+        setShowPromptInput(false);
         setPrompt("some default prompt");
         setIsGenerating(false);
     };
@@ -176,6 +177,7 @@ const CreateNodeModal: React.FC<{
             }, 1500);
         }
     };
+    
     const handleSelectIdeaItem = (title: string) => {
         onCreateManual(title, "some basic description about the title " + title);
         handleClose();
@@ -198,79 +200,67 @@ const CreateNodeModal: React.FC<{
                     </button>
                 </div>
 
-                {mode === "select" && (
-                    <div className="space-y-4">
-                        <div className="h-50 space-y-2 overflow-scroll scrollbar-hide w-full px-4 py-2 border-2 border-gray-200 bg-gray-100 rounded-lg">
-                            {ideaTypes.map((idea: IdeaType) => (
-                                <IdeaItem
-                                    key={idea.title}
-                                    title={idea.title}
-                                    icon={idea.icon}
-                                    onClick={() => {
-                                        handleSelectIdeaItem(idea.title);
-                                        // console.log('hello', idea.title);
-                                    }}
-                                />
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={() => setMode("prompt")}
-                            className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all duration-200 text-left"
-                        >
-                            <div className="flex items-center space-x-3">
-                                <Sparkles className="w-5 h-5 text-purple-500" />
-                                <div>
-                                    <h3 className="font-medium text-gray-900">
-                                        Generate via Prompt
-                                    </h3>
-                                    <p className="text-sm text-gray-600">
-                                        Let AI create the node based on your prompt
-                                    </p>
-                                </div>
-                            </div>
-                        </button>
+                <div className="space-y-4">
+                    {/* Grid layout for idea types (3x3 grid) */}
+                    <div className="grid grid-cols-3 gap-2">
+                        {ideaTypes.map((idea: IdeaType) => (
+                            <button
+                                key={idea.title}
+                                onClick={() => handleSelectIdeaItem(idea.title)}
+                                className="p-2 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex flex-col items-center text-center"
+                            >
+                                <idea.icon className="w-5 h-5 text-blue-500 mb-1" />
+                                <h3 className="text-xs font-medium text-gray-900">{idea.title}</h3>
+                            </button>
+                        ))}
                     </div>
-                )}
 
-                {mode === "prompt" && (
-                    <div className="space-y-4">
-                        <button
-                            onClick={() => setMode("select")}
-                            className="text-sm text-blue-600 hover:text-blue-800"
-                        >
-                            ← Back to options
-                        </button>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Prompt
-                            </label>
+                    <button
+                        onClick={() => setShowPromptInput(!showPromptInput)}
+                        className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all duration-200 text-left"
+                    >
+                        <div className="flex items-center space-x-3">
+                            <Sparkles className="w-5 h-5 text-purple-500" />
+                            <div>
+                                <h3 className="font-medium text-gray-900">
+                                    Generate via Prompt
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                    Let AI create the node based on your prompt
+                                </p>
+                            </div>
+                        </div>
+                    </button>
+
+                    {/* Prompt Input appears directly below the button */}
+                    {showPromptInput && (
+                        <div className="space-y-3 bg-purple-50 p-3 rounded-lg border border-purple-100">
                             <textarea
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-md h-24 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full p-3 border border-purple-200 rounded-md h-24 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="Describe what you want the new node to be about..."
                             />
+                            <button
+                                onClick={handlePromptCreate}
+                                disabled={!prompt.trim() || isGenerating}
+                                className="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <span>Generating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-4 h-4" />
+                                        <span>Generate Node</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
-                        <button
-                            onClick={handlePromptCreate}
-                            disabled={!prompt.trim() || isGenerating}
-                            className="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                        >
-                            {isGenerating ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    <span>Generating...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="w-4 h-4" />
-                                    <span>Generate Node</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
