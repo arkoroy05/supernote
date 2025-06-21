@@ -9,42 +9,32 @@ import { getConfig } from "./config";
 import { Providers } from "./providers";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+    variable: "--font-geist-sans",
+    subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+    variable: "--font-geist-mono",
+    subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Supernote",
-  description: "The ideating platform for the future",
-  icons: {
-    icon: '/favicon.ico', // or .png/.svg if you're using that
-  },
+    title: "Supernote",
+    description: "The ideating platform for the future",
+    icons: {
+        icon: '/favicon.ico', // or .png/.svg if you're using that
+    },
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const initialState = cookieToInitialState(
-    getConfig(),
-    (await headers()).get("cookie")
-  );
-  return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${ppEditorialNewUltralightItalic.variable} ${inter.variable} antialiased`}
-      >
-      <Providers initialState={initialState}>
-
-        {children}
-      </Providers>
-      </body>
-    </html>
-  );
+export default async function RootLayout({ children, }: Readonly<{ children: React.ReactNode; }>) {
+    const initialState = cookieToInitialState(getConfig(), (await headers()).get("cookie"));
+    return (
+        <html lang="en">
+            <body className={`${geistSans.variable} ${geistMono.variable} ${ppEditorialNewUltralightItalic.variable} ${inter.variable} antialiased`}>
+                <Providers initialState={initialState}>
+                    {children}
+                </Providers>
+            </body>
+        </html>
+    );
 }

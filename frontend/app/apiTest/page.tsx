@@ -60,7 +60,6 @@ export default function SupernoteTesterPage() {
             if (response.data?._id) setProjectId(response.data._id);
             if (response.data?.newNode?.id) setNodeId(response.data.newNode.id);
         } catch (error) {
-            console.log(error);
             handleApiError(error);
         }
     };
