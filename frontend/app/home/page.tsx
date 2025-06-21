@@ -114,7 +114,6 @@ export default function Home() {
     }}
   />
   <Features 
-  primaryColor="sky-500"
   progressGradientLight="bg-gradient-to-r from-sky-400 to-sky-500"
   progressGradientDark="bg-gradient-to-r from-sky-300 to-sky-400" 
   features={features} />
