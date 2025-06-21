@@ -52,6 +52,8 @@ const IdeaAnalysisPage: React.FC = () => {
 
         if (!variation) return;
 
+        console.log('Selected variation:', variation);
+
         const colonIndex = variation.indexOf(':');
         const title = colonIndex !== -1 ? variation.substring(0, colonIndex).trim() : `Variation ${index + 1}`;
         const description = colonIndex !== -1 ? variation.substring(colonIndex + 1).trim() : variation;
@@ -89,11 +91,14 @@ const IdeaAnalysisPage: React.FC = () => {
             //     feedback: '',
             // },
         };
+
+        console.log('Project:', project);
         setLoading(true);
         try {
             const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project`, project, { withCredentials: true });
             if (response?.data) {
                 window.location.href = `/graph/${response.data._id}`;
+                console.log('Response:', response.data);
             }
             setLoading(false);
         }
@@ -106,6 +111,8 @@ const IdeaAnalysisPage: React.FC = () => {
             console.log(JSON.stringify(errorData, null, 2));
             setLoading(false);
         }
+        console.log('end');
+
     };
 
     return (
