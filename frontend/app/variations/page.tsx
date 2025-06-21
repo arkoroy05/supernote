@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Lightbulb, Target, TrendingUp } from 'lucide-react';
+import { useUser } from '@civic/auth/react';
+import axios from 'axios';
 
 interface AnalysisData {
     analysis: string;
@@ -29,6 +31,7 @@ const markdownToHtml = (markdown: string): string => {
 
 const IdeaAnalysisPage: React.FC = () => {
     const [data, setData] = useState<AnalysisData | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
         // Get data from localStorage when component mounts
@@ -36,6 +39,7 @@ const IdeaAnalysisPage: React.FC = () => {
         if (storedData) {
             try {
                 const parsedData = JSON.parse(storedData);
+                console.log(parsedData);
                 setData(parsedData);
             } catch (error) {
                 console.error("Error parsing data from localStorage:", error);
@@ -43,37 +47,68 @@ const IdeaAnalysisPage: React.FC = () => {
         }
     }, []);
 
-    const handleVariationClick = (index: number): void => {
-        window.location.href = '/graph';
+    const handleVariationClick = async (index: number) => {
+        const variation = data?.variations?.[index];
+
+        if (!variation) return;
+
+        const colonIndex = variation.indexOf(':');
+        const title = colonIndex !== -1 ? variation.substring(0, colonIndex).trim() : `Variation ${index + 1}`;
+        const description = colonIndex !== -1 ? variation.substring(colonIndex + 1).trim() : variation;
+
         const project = {
-            user: '',
-            name: '',
+            name: title,
             nodes: [{
-                id: '',
-                title: '',
-                data: { label: '', prompt: '' },
+                id: 'node_1',
+                title: 'Strategic Analysis',
+                data: { label: data.analysis, prompt: 'analysis' },
                 position: { x: 0, y: 0 },
-            }],
+            }, {
+                id: 'node_2',
+                title: title,
+                data: { label: description, prompt: `variation ${index + 1}` },
+                position: { x: 100, y: 100 },
+            },],
             edges: [{
-                id: '',
-                source: '',
-                target: '',
+                id: 'edge_1_2',
+                source: 'node_1',
+                target: 'node_2',
             }],
-            categorization: {
-                type: '',
-                market: '',
-                target: '',
-                main_competitors: '',
-                trendAnalysis: '',
-            },
-            projectRating: {
-                opportunity: 0,
-                problem: 0,
-                feasibility: 0,
-                why_now: 0,
-                feedback: '',
-            },
+            // categorization: {
+            //     type: '',
+            //     market: '',
+            //     target: '',
+            //     main_competitors: '',
+            //     trendAnalysis: '',
+            // },
+            // projectRating: {
+            //     opportunity: 0,
+            //     problem: 0,
+            //     feasibility: 0,
+            //     why_now: 0,
+            //     feedback: '',
+            // },
         };
+        setLoading(true);
+        try {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project`, project, { withCredentials: true });
+            if (response?.data) {
+                // localStorage.setItem('ideaAnalysisData', JSON.stringify(response.data));
+                console.log(response.data);
+            }
+            setLoading(false);
+            // push to /graph with project id
+            // window.location.href = '/graph';
+        }
+        catch (error: unknown) {
+            const errorData = error instanceof Error
+                ? { message: error.message }
+                : axios.isAxiosError(error) && error.response
+                    ? error.response.data
+                    : { message: 'An unknown error occurred' };
+            console.log(JSON.stringify(errorData, null, 2));
+            setLoading(false);
+        }
     };
 
     return (
