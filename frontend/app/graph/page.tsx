@@ -146,29 +146,18 @@ const CreateNodeModal: React.FC<{
     parentTitle: string;
 }> = ({ isOpen, onClose, onCreateManual, onCreateFromPrompt, parentTitle }) => {
     const [mode, setMode] = useState<"select" | "manual" | "prompt">("select");
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const [prompt, setPrompt] = useState("");
+    const [prompt, setPrompt] = useState("some default prompt");
     const [isGenerating, setIsGenerating] = useState(false);
 
     const resetModal = () => {
         setMode("select");
-        setTitle("");
-        setDescription("");
-        setPrompt("");
+        setPrompt("some default prompt");
         setIsGenerating(false);
     };
 
     const handleClose = () => {
         resetModal();
         onClose();
-    };
-
-    const handleManualCreate = () => {
-        if (title.trim() && description.trim()) {
-            onCreateManual(title, description);
-            handleClose();
-        }
     };
 
     const handlePromptCreate = () => {
@@ -181,6 +170,10 @@ const CreateNodeModal: React.FC<{
                 handleClose();
             }, 1500);
         }
+    };
+    const handleSelectIdeaItem = (title: string) => {
+        onCreateManual(title, "some basic description about the title " + title);
+        handleClose();
     };
 
     if (!isOpen) return null;
@@ -209,7 +202,8 @@ const CreateNodeModal: React.FC<{
                                     title={idea.title}
                                     icon={idea.icon}
                                     onClick={() => {
-                                        console.log("Selected:", idea.title);
+                                        handleSelectIdeaItem(idea.title);
+                                        // console.log('hello', idea.title);
                                     }}
                                 />
                             ))}
@@ -230,47 +224,6 @@ const CreateNodeModal: React.FC<{
                                     </p>
                                 </div>
                             </div>
-                        </button>
-                    </div>
-                )}
-
-                {mode === "manual" && (
-                    <div className="space-y-4">
-                        <button
-                            onClick={() => setMode("select")}
-                            className="text-sm text-blue-600 hover:text-blue-800"
-                        >
-                            ← Back to options
-                        </button>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Title
-                            </label>
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Enter node title..."
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description
-                            </label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-md h-24 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Enter node description..."
-                            />
-                        </div>
-                        <button
-                            onClick={handleManualCreate}
-                            disabled={!title.trim() || !description.trim()}
-                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Create Node
                         </button>
                     </div>
                 )}
@@ -431,7 +384,7 @@ export default function GraphPage() {
                 id: `edge-${selectedParentId}-${newNodeId}`,
                 source: selectedParentId,
                 target: newNodeId,
-                type: "bezier",
+                // type: "bezier",
                 animated: false,
                 style: { stroke: "#3b82f6", strokeWidth: 2 },
             };
@@ -475,7 +428,7 @@ export default function GraphPage() {
                 id: `edge-${selectedParentId}-${newNodeId}`,
                 source: selectedParentId,
                 target: newNodeId,
-                type: "bezier",
+                // type: "bezier",
                 animated: false,
                 style: { stroke: "#8b5cf6", strokeWidth: 2 },
             };
