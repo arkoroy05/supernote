@@ -12,7 +12,11 @@ router.get('/login', async (req, res) => {
 router.get('/logout', async (req, res) => {
   try {
     // Delete our local session cookie
-    await req.storage.delete('civic-session');
+    await req.storage.delete('access_token');
+    await req.storage.delete('id_token');
+    await req.storage.delete('oidc_session_expires_at');
+    await req.storage.delete('refresh_token');
+
     // Build the URL to log out of Civic's central service
     const url = await req.civicAuth.buildLogoutRedirectUrl();
     // Redirect the user's browser
