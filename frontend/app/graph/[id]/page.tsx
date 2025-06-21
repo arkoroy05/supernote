@@ -94,8 +94,11 @@ const IdeaNode: React.FC<
             <h3 className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-blue-600" onClick={() => onNodeClick(id)}>
                 {data.title}
             </h3>
-            <p className="text-sm h-20 text-gray-600 line-clamp-4 cursor-pointer hover:text-gray-800" onClick={() => onNodeClick(id)}>
-                {data.description}
+            <p
+            className="text-sm h-20 text-gray-600 line-clamp-4 cursor-pointer hover:text-gray-800"
+            onClick={() => onNodeClick(id)}
+            >
+            {data.description.replace(/[#*]/g, "")}
             </p>
             <button onClick={() => onCreateNode(id)} className="w-[60%] justify-self-center bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-md hover:from-blue-600 hover:to-purple-700 flex items-center justify-center space-x-2">
                 <WandSparkles className="w-4 h-4" />
@@ -367,12 +370,7 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
     }
 
     return (
-        <div className="w-full h-screen bg-gray-100">
-            <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur-sm shadow-xl rounded-lg p-4 max-w-md border border-gray-200">
-                <h1 className="text-xl font-bold text-gray-900">Project Mindmap</h1>
-                <p className="text-sm text-gray-600">Click a node to explore details or use the side panel to evaluate your idea.</p>
-            </div>
-            
+        <div className="w-full h-screen bg-gray-100">            
             <div className="flex h-full w-full">
                 <div className="flex-grow h-full">
                     <ReactFlow
