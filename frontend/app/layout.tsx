@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { cookieToInitialState } from "wagmi";
 import { getConfig } from "./config";
 import { Providers } from "./providers";
+import Navbar from "@/components/NavBar";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -32,6 +33,7 @@ export default async function RootLayout({ children, }: Readonly<{ children: Rea
         <html lang="en">
             <body className={`${geistSans.variable} ${geistMono.variable} ${ppEditorialNewUltralightItalic.variable} ${inter.variable} antialiased`}>
                 <Providers initialState={initialState}>
+                    <Navbar />
                     {children}
                 </Providers>
             </body>

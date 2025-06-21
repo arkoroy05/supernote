@@ -1,6 +1,8 @@
+"use client";
+
 import React from 'react';
 import { LogOut } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@civic/auth/react';
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +25,41 @@ interface NavbarProps {
 
 export default function Navbar({ className = "" }: NavbarProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const { user, signOut } = useUser();
+
+    // Define routes that should not show navbar
+    const hideNavbarRoutes = ['/', '/variations'];
+    
+    // If current route should not show navbar, return null
+    if (hideNavbarRoutes.includes(pathname)) {
+        return null;
+    }
+    
+    // Determine first button destination based on current route
+    const getFirstButtonDestination = () => {
+        switch (pathname) {
+            case '/projects':
+                return '/starting';
+            case '/graph':
+                return '/projects';
+            case '/synthesize':
+                return '/graph';
+            case '/feed2':
+                return '/projects';
+            default:
+                return '/projects';
+        }
+    };
+    
+    // Get the first button label text based on destination
+    const getFirstButtonLabel = () => {
+        const destination = getFirstButtonDestination();
+        return destination.charAt(1).toUpperCase() + destination.slice(2);
+    };
+    
+    const firstButtonDestination = getFirstButtonDestination();
+    const firstButtonLabel = getFirstButtonLabel();
 
     return (
         <header className={`flex justify-between items-center px-6 py-6 backdrop-blur-sm bg-transparent ${className}`}>
@@ -39,9 +75,9 @@ export default function Navbar({ className = "" }: NavbarProps) {
                 <Button
                     variant="ghost"
                     className="font-medium"
-                    onClick={() => router.push('/projects')}
+                    onClick={() => router.push(firstButtonDestination)}
                 >
-                    Projects
+                    {firstButtonLabel}
                 </Button>
 
                 <DropdownMenu>

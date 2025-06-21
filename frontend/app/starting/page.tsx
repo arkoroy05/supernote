@@ -5,7 +5,6 @@ import { Paperclip, Send, LoaderCircle } from 'lucide-react';
 import { Typewriter } from '@/components/ui/typewriter';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/NavBar'; // Adjust the import path as needed
 
 // Aurora Background Component
 const AuroraBackground = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -106,9 +105,6 @@ export default function Starting() {
 
     return (
         <AuroraBackground className="bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900">
-            {/* Header */}
-            <Navbar />
-
             {/* Main Content */}
             <main className="flex flex-col items-center justify-center px-6 py-20">
                 <div className="max-w-4xl text-center">
