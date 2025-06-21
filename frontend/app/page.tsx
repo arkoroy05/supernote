@@ -8,8 +8,8 @@ import { Pricing } from "@/components/pricing";
 import { MarqueeAnimation } from "@/components/ui/marquee-effect";
 import { BackgroundLines } from "@/components/ui/background-lines";
 
-import React, { useState, useEffect, ChangeEvent } from 'react';
-import axios, { AxiosResponse } from 'axios';
+import React, {  useEffect} from 'react';
+import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
 
@@ -110,7 +110,7 @@ interface ApiResponse {
     isLoggedIn: boolean;
     user?: User;
     message?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 // Create an Axios instance. `withCredentials: true` is ESSENTIAL for session cookies.
@@ -133,8 +133,12 @@ export default function Home() {
             // setIsLoading(false);
             console.log(response);
         }
-        catch (error: any) {
-            const errorData = error.response ? error.response.data : { message: error.message };
+        catch (error: unknown) {
+            const errorData = error instanceof Error 
+                ? { message: error.message }
+                : axios.isAxiosError(error) && error.response 
+                    ? error.response.data 
+                    : { message: 'An unknown error occurred' };
             console.log(JSON.stringify(errorData, null, 2));
             // setIsLoading(false);
         }

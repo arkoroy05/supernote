@@ -13,7 +13,16 @@ interface ApiResponse {
     user?: User;
     message?: string;
     // Add other possible response fields here
-    [key: string]: any;
+    [key: string]: unknown;
+}
+
+// Add a more specific response data type
+interface ProjectResponse {
+    _id?: string;
+    newNode?: {
+        id: string;
+    };
+    [key: string]: unknown;
 }
 
 // --- CONFIGURATION ---
@@ -37,29 +46,34 @@ export default function SupernoteTesterPage() {
     const [file, setFile] = useState<File | null>(null);
 
     // --- HELPER FUNCTIONS ---
-    const handleApiResponse = (response: any) => {
+    const handleApiResponse = (response: unknown) => {
         console.log('API Response:', response);
         setApiResponse(JSON.stringify(response, null, 2)); // Pretty-print JSON
         setIsLoading(false);
     };
 
-    const handleApiError = (error: any) => {
+    const handleApiError = (error: unknown) => {
         console.error('API Error:', error);
-        const errorData = error.response ? error.response.data : { message: error.message };
+        const errorData = error instanceof Error 
+            ? { message: error.message }
+            : axios.isAxiosError(error) && error.response 
+                ? error.response.data 
+                : { message: 'An unknown error occurred' };
         setApiResponse(JSON.stringify(errorData, null, 2));
         setIsLoading(false);
     };
 
-    const executeApiCall = async (apiFunction: () => Promise<AxiosResponse<any>>) => {
+    const executeApiCall = async (apiFunction: () => Promise<AxiosResponse<unknown>>) => {
         setIsLoading(true);
         setApiResponse(null);
         try {
             const response = await apiFunction();
             handleApiResponse(response.data);
             // Automatically save project and node IDs for subsequent tests
-            if (response.data?._id) setProjectId(response.data._id);
-            if (response.data?.newNode?.id) setNodeId(response.data.newNode.id);
-        } catch (error) {
+            const data = response.data as ProjectResponse;
+            if (data?._id) setProjectId(data._id);
+            if (data?.newNode?.id) setNodeId(data.newNode.id);
+        } catch (error: unknown) {
             handleApiError(error);
         }
     };
