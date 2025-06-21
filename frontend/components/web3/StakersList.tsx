@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAccount } from "wagmi"
 import type { Abi } from "viem"
 import { Users, CheckCircle, AlertCircle } from "lucide-react"
+import React from "react"
 
 function shortenAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -16,7 +17,7 @@ function shortenAddress(address: string) {
 export function StakersList() {
   const { address: connectedAddress } = useAccount()
 
-  const { useStakers, useStakeAmount } = useIdeaAccelerator({
+  const { useStakers } = useIdeaAccelerator({
     contractAddress: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI as Abi,
   })
@@ -66,12 +67,11 @@ export function StakersList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {stakers?.map((stakerAddress) => (
-                <StakerRow
-                  key={stakerAddress}
+              {stakers?.map((stakerAddress, index) => (
+                <ConditionalStakerRow
+                  key={`${stakerAddress}-${index}`}
                   address={stakerAddress}
                   isCurrentUser={stakerAddress.toLowerCase() === connectedAddress?.toLowerCase()}
-                  useStakeAmount={useStakeAmount}
                 />
               ))}
             </TableBody>
@@ -89,20 +89,42 @@ export function StakersList() {
   )
 }
 
+interface ConditionalStakerRowProps {
+  address: string
+  isCurrentUser: boolean
+}
+
+// This component will only render if stake amount > 0
+function ConditionalStakerRow({ address, isCurrentUser }: ConditionalStakerRowProps) {
+  const { useStakeAmount } = useIdeaAccelerator({
+    contractAddress: CONTRACT_ADDRESS as `0x${string}`,
+    abi: CONTRACT_ABI as Abi,
+  })
+  
+  const { data: stakeAmount, isLoading } = useStakeAmount(address as `0x${string}`)
+  
+  // Only render the row if stake amount is greater than 0
+  if (isLoading) return null; // Skip while loading
+  if (!stakeAmount || stakeAmount <= BigInt(0)) return null;
+  
+  return (
+    <StakerRow 
+      address={address} 
+      isCurrentUser={isCurrentUser} 
+      stakeAmount={stakeAmount}
+      isActive={stakeAmount >= BigInt("500000000000000000")}
+    />
+  )
+}
+
 interface StakerRowProps {
   address: string
   isCurrentUser: boolean
-  useStakeAmount: (address?: `0x${string}`) => {
-    data: bigint | undefined
-    isLoading: boolean
-    error: Error | null
-  }
+  stakeAmount: bigint
+  isActive: boolean
 }
 
-function StakerRow({ address, isCurrentUser, useStakeAmount }: StakerRowProps) {
-  const { data: stakeAmount, isLoading } = useStakeAmount(address as `0x${string}`)
-  const isActive = stakeAmount && stakeAmount >= BigInt("500000000000000000")
-
+function StakerRow({ address, isCurrentUser, stakeAmount, isActive }: StakerRowProps) {
   return (
     <TableRow className="hover:bg-slate-50 transition-colors">
       <TableCell className="font-medium py-4 px-6">
@@ -114,11 +136,7 @@ function StakerRow({ address, isCurrentUser, useStakeAmount }: StakerRowProps) {
         </div>
       </TableCell>
       <TableCell className="py-4 px-6">
-        {isLoading ? (
-          <Skeleton className="h-5 w-24 rounded" />
-        ) : (
-          <span className="font-semibold text-slate-900">{formatStakeAmount(stakeAmount)} ETH</span>
-        )}
+        <span className="font-semibold text-slate-900">{formatStakeAmount(stakeAmount)} ETH</span>
       </TableCell>
       <TableCell className="text-right py-4 px-6">
         <div className="flex items-center justify-end gap-2">

@@ -1,9 +1,12 @@
 "use client"
 
-import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, CheckCircle, XCircle, MessageCircle, Check, X,  Home } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { ThumbsUp, ThumbsDown, CheckCircle, XCircle, MessageCircle, Check, X, Home } from 'lucide-react';
 import { StakingStats } from '@/components/web3/StakingStats';
 import { StakersList } from '@/components/web3/StakersList';
+import { useIdeaAccelerator } from '@/app/hooks';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/app/constants';
+import type { Abi } from 'viem';
 
 interface Comment {
   id: number;
@@ -30,14 +33,29 @@ type VoteType = 'up' | 'down';
 type ApprovalType = 'approve' | 'reject';
 
 const GrantFeed = () => {
-  const [isStaker, setIsStaker] = useState<boolean>(false);
+  // Web3 hooks
+  const {
+    useIsStaker,
+    useApproveGrant,
+  } = useIdeaAccelerator({
+    contractAddress: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI as Abi,
+  });
+
+  // Check if user is a staker
+  const { data: isStaker, isLoading: isStakerLoading } = useIsStaker();
+  
+  // Grant approval hook
+  const { 
+    approveGrant
+  } = useApproveGrant();
+
+  // Local state
   const [showComments, setShowComments] = useState<{ [key: number]: boolean }>({});
   const [newComment, setNewComment] = useState<{ [key: number]: string }>({});
+  const [processingIds, setProcessingIds] = useState<{[key: number]: boolean}>({});
 
   // Mock data
-  // These variables are currently unused but kept for future reference
-  // const poolBalance = 4.3;
-  // const totalStakers = 127;
   const minVotes = 10;
   const approvalThreshold = 70;
 
@@ -86,9 +104,6 @@ const GrantFeed = () => {
   ]);
 
   const handleJoinGrantPool = () => {
-    // Set isStaker to true before redirecting
-    setIsStaker(true);
-    // Redirect to /staking
     window.location.href = '/staking';
   };
 
@@ -121,29 +136,77 @@ const GrantFeed = () => {
     }));
   };
 
-  const handleApproval = (requestId: number, approvalType: ApprovalType) => {
-    setGrantRequests(prev => prev.map(req => {
-      if (req.id === requestId && !req.hasApproved) {
-        const newApprovals = { ...req.approvals };
-        newApprovals[approvalType]++;
-        const totalApprovals = newApprovals.approve + newApprovals.reject;
-        const approvalRate = (newApprovals.approve / totalApprovals) * 100;
+  const handleApproval = useCallback(async (requestId: number, approvalType: ApprovalType) => {
+    // Mark this request as processing
+    setProcessingIds(prev => ({...prev, [requestId]: true}));
+    
+    if (approvalType === 'approve') {
+      try {
+        // Call smart contract to approve grant
+        await approveGrant(requestId);
         
-        let newStatus: 'voting' | 'approved' | 'rejected' = req.status;
-        if (totalApprovals >= minVotes) {
-          newStatus = approvalRate >= approvalThreshold ? 'approved' : 'rejected';
-        }
-        
-        return {
-          ...req,
-          approvals: newApprovals,
-          hasApproved: true,
-          status: newStatus
-        };
+        setGrantRequests(prev => prev.map(req => {
+          if (req.id === requestId && !req.hasApproved) {
+            const newApprovals = { ...req.approvals };
+            newApprovals[approvalType]++;
+            const totalApprovals = newApprovals.approve + newApprovals.reject;
+            const approvalRate = (newApprovals.approve / totalApprovals) * 100;
+            
+            let newStatus: 'voting' | 'approved' | 'rejected' = req.status;
+            if (totalApprovals >= minVotes) {
+              newStatus = approvalRate >= approvalThreshold ? 'approved' : 'rejected';
+            }
+            
+            return {
+              ...req,
+              approvals: newApprovals,
+              hasApproved: true,
+              status: newStatus
+            };
+          }
+          return req;
+        }));
+      } catch (error) {
+        console.error("Error approving grant:", error);
+      } finally {
+        // Remove from processing state
+        setProcessingIds(prev => {
+          const newState = {...prev};
+          delete newState[requestId];
+          return newState;
+        });
       }
-      return req;
-    }));
-  };
+    } else {
+      // For rejections, just update the UI (since we don't have a reject function in the contract)
+      setGrantRequests(prev => prev.map(req => {
+        if (req.id === requestId && !req.hasApproved) {
+          const newApprovals = { ...req.approvals };
+          newApprovals[approvalType]++;
+          const totalApprovals = newApprovals.approve + newApprovals.reject;
+          const approvalRate = (newApprovals.approve / totalApprovals) * 100;
+          
+          let newStatus: 'voting' | 'approved' | 'rejected' = req.status;
+          if (totalApprovals >= minVotes) {
+            newStatus = approvalRate >= approvalThreshold ? 'approved' : 'rejected';
+          }
+          
+          return {
+            ...req,
+            approvals: newApprovals,
+            hasApproved: true,
+            status: newStatus
+          };
+        }
+        return req;
+      }));
+      
+      setProcessingIds(prev => {
+        const newState = {...prev};
+        delete newState[requestId];
+        return newState;
+      });
+    }
+  }, [approveGrant, minVotes, approvalThreshold]);
 
   const toggleComments = (requestId: number) => {
     setShowComments(prev => ({
@@ -216,6 +279,14 @@ const GrantFeed = () => {
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Grant Feed</h2>
+                {isStaker && (
+                  <a 
+                    href="/idea"
+                    className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm"
+                  >
+                    <span>Go to Ideas</span>
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -225,6 +296,7 @@ const GrantFeed = () => {
             {grantRequests.map(request => {
               const totalApprovals = request.approvals.approve + request.approvals.reject;
               const approvalRate = totalApprovals > 0 ? (request.approvals.approve / totalApprovals) * 100 : 0;
+              const isRequestProcessing = processingIds[request.id] || false;
               
               return (
                 <div key={request.id} className="bg-white p-6 hover:bg-gray-50 transition-colors border-b border-gray-100">
@@ -311,14 +383,16 @@ const GrantFeed = () => {
                               <div className="flex items-center space-x-1">
                                 <button
                                   onClick={() => handleApproval(request.id, 'approve')}
-                                  className="flex items-center space-x-1 px-2 py-1 bg-green-50 text-green-700 rounded-full hover:bg-green-100 transition-colors text-xs"
+                                  disabled={isRequestProcessing}
+                                  className={`flex items-center space-x-1 px-2 py-1 bg-green-50 text-green-700 rounded-full hover:bg-green-100 transition-colors text-xs ${isRequestProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                   <Check className="w-3 h-3" />
                                   <span>{request.approvals.approve}</span>
                                 </button>
                                 <button
                                   onClick={() => handleApproval(request.id, 'reject')}
-                                  className="flex items-center space-x-1 px-2 py-1 bg-red-50 text-red-700 rounded-full hover:bg-red-100 transition-colors text-xs"
+                                  disabled={isRequestProcessing}
+                                  className={`flex items-center space-x-1 px-2 py-1 bg-red-50 text-red-700 rounded-full hover:bg-red-100 transition-colors text-xs ${isRequestProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                   <X className="w-3 h-3" />
                                   <span>{request.approvals.reject}</span>
@@ -392,58 +466,52 @@ const GrantFeed = () => {
 
         {/* Right Sidebar */}
         <div className="w-90 bg-white border-l border-gray-200 p-6">
-          {/* Grant Pool Info */}
-          {/* <div className="bg-gray-50 rounded-xl p-4 mb-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">Grant Pool</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Coins className="w-4 h-4 text-indigo-600" />
-                  <span className="text-sm text-gray-600">Pool Balance</span>
-                </div>
-                <span className="font-bold text-gray-900">{poolBalance} ETH</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Users className="w-4 h-4 text-indigo-600" />
-                  <span className="text-sm text-gray-600">Total Stakers</span>
-                </div>
-                <span className="font-bold text-gray-900">{totalStakers}</span>
-              </div>
-            </div>
-          </div> */}
           <StakingStats/>
 
           {/* Join Grant Pool / Profile */}
-          {!isStaker ? (
-            <div className="bg-indigo-50 rounded-xl p-4 mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Join the Grant Pool</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Stake ETH to vote on community funding decisions and help shape the future of Supernote.
-              </p>
-              <button
-                onClick={handleJoinGrantPool}
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-              >
-                Join Grant Pool
-              </button>
-            </div>
-          ) : (
-            <div className="bg-green-50 rounded-xl p-4 mb-6">
-              <div className="flex items-center space-x-2 mb-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <h3 className="text-lg font-bold text-gray-900">Grant Pool Member</h3>
+          {!isStakerLoading && (
+            !isStaker ? (
+              <div className="bg-indigo-50 rounded-xl p-4 mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Join the Grant Pool</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Stake ETH to vote on community funding decisions and help shape the future of Supernote.
+                </p>
+                <button
+                  onClick={handleJoinGrantPool}
+                  className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                >
+                  Join Grant Pool
+                </button>
               </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Youre eligible to vote on grant approvals.
-              </p>
-              <button className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">
-                View My Profile
-              </button>
-            </div>
+            ) : (
+              <div className="bg-green-50 rounded-xl p-4 mb-6">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <h3 className="text-lg font-bold text-gray-900">Grant Pool Member</h3>
+                </div>
+                <p className="text-sm text-gray-600 mb-3">
+                  You&apos;re eligible to vote on grant approvals and request grants.
+                </p>
+                <a 
+                  href="/idea"
+                  className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm flex items-center justify-center"
+                >
+                  Go to Idea Page
+                </a>
+              </div>
+            )
           )}
 
-          {/* What's Happening */}
+          {/* Loading State */}
+          {isStakerLoading && (
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <div className="animate-pulse flex flex-col space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-full"></div>
+                <div className="h-8 bg-gray-200 rounded w-full"></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
