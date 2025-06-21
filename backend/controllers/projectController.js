@@ -61,7 +61,6 @@ const buildHierarchicalContext = (nodes, edges, startNodeId) => {
 
 
 export const createProject = async (req, res) => {
-    console.log('createProject');
     const { name, nodes, edges } = req.body;
     if (!nodes || !edges || !name) {
         return res.status(400).json({ message: 'Project name, nodes, and edges are required.' });
@@ -226,7 +225,6 @@ export const synthesizeDocument = async (req, res) => {
 
 
 export const getProjectById = async (req, res) => {
-    console.log('hello');
     try {
         const _user = await req.civicAuth.getUser();
         const userId = _user.id;
@@ -410,11 +408,13 @@ export const updateNodePositions = async (req, res) => {
     }
 
     try {
-        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+        const project = await Project.findOne({ _id: projectId, user: userId });
+        
         if (!project) {
-            return res.status(404).json({ message: 'Project not found' });
+            return res.status(404).json({ message: 'Project not found or you do not have permission.' });
         }
-
 
         const nodeMap = new Map(project.nodes.map(node => [node.id, node]));
 
