@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, Users, Coins, CheckCircle, XCircle, MessageCircle, Check, X, User, Home } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, CheckCircle, XCircle, MessageCircle, Check, X,  Home } from 'lucide-react';
 import { StakingStats } from '@/components/web3/StakingStats';
 import { StakersList } from '@/components/web3/StakersList';
 
@@ -35,8 +35,9 @@ const GrantFeed = () => {
   const [newComment, setNewComment] = useState<{ [key: number]: string }>({});
 
   // Mock data
-  const poolBalance = 4.3;
-  const totalStakers = 127;
+  // These variables are currently unused but kept for future reference
+  // const poolBalance = 4.3;
+  // const totalStakers = 127;
   const minVotes = 10;
   const approvalThreshold = 70;
 
@@ -85,6 +86,8 @@ const GrantFeed = () => {
   ]);
 
   const handleJoinGrantPool = () => {
+    // Set isStaker to true before redirecting
+    setIsStaker(true);
     // Redirect to /staking
     window.location.href = '/staking';
   };
@@ -432,7 +435,7 @@ const GrantFeed = () => {
                 <h3 className="text-lg font-bold text-gray-900">Grant Pool Member</h3>
               </div>
               <p className="text-sm text-gray-600 mb-3">
-                You're eligible to vote on grant approvals.
+                Youre eligible to vote on grant approvals.
               </p>
               <button className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">
                 View My Profile
