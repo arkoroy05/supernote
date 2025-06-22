@@ -192,7 +192,6 @@ export const converseWithNode = async (req, res) => {
 export const synthesizeDocument = async (req, res) => {
     const { projectId } = req.params;
 
-
     try {
         const _user = await req.civicAuth.getUser();
         const userId = _user.id;
@@ -200,7 +199,6 @@ export const synthesizeDocument = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found.' });
         }
-
 
         const synthesisContext = buildFullGraphContext(project.nodes, project.edges);
 
@@ -219,6 +217,7 @@ export const synthesizeDocument = async (req, res) => {
         const finalReport = await synthesisChain.invoke({ notes: synthesisContext });
 
         res.status(200).json({ document: finalReport });
+        console.log('Document synthesized successfully:', finalReport);
     } catch (error) {
         console.error('Error synthesizing document:', error);
         res.status(500).json({ message: 'Error synthesizing document.' });
@@ -260,18 +259,16 @@ export const getUserProjects = async (req, res) => {
 export const updateProjectRating = async (req, res) => {
     const { projectId } = req.params;
 
-
     try {
         const _user = await req.civicAuth.getUser();
         const userId = _user.id;
         const project = await Project.findOne({ _id: projectId, user: userId });
         if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-
         const researchContext = buildFullGraphContext(project.nodes, project.edges);
 
         const ratingPrompt = PromptTemplate.fromTemplate(
-            `You are a seasoned venture capitalist with decades of experience investing in early-stage startups. Your job is to critically assess the following research notes provided by a founder about their project. Be brutally honest — do not inflate scores. We want you to challenge the founder to improve. Always assume this is a pitch from a first-time founder who needs real guidance.\n\nBased on the research below, evaluate the startup across four axes: \n\n1. 'opportunity' (0-10): Evaluate the size of the market, urgency of the need, and long-term potential of this space.\n2. 'problem' (0-10): Is the problem clearly defined, significant, and felt deeply by a real target audience?\n3. 'feasibility' (0-10): Can this team realistically execute the idea given current tools, skills, or constraints?\n4. 'why_now' (0-10): Is there a strong, time-sensitive reason this should exist now?\n\nYou must return your evaluation as a valid JSON object with the following keys:\n\n- 'opportunity': number (0–10)\n- 'problem': number (0–10)\n- 'feasibility': number (0–10)\n- 'why_now': number (0–10)\n- 'feedback': string\n\nYour 'feedback' must include exactly 3 pros and 3 cons — make the tone firm but constructive. Do not hold back if the idea is weak or generic. The goal is to help the founder improve. Be specific and critical without being disrespectful.\n\nHere are the research notes:\n{notes}`
+            `You are a seasoned venture capitalist. Critically assess the following research notes. Be brutally honest — do not inflate scores. We want to challenge the founder. Always assume this is a pitch from a first-time founder who needs real guidance.\n\nBased on the research below, evaluate the startup across four axes: \n\n1. 'opportunity' (0-10): Evaluate the market size, urgency, and long-term potential.\n2. 'problem' (0-10): Is the problem clearly defined and significant for a real audience?\n3. 'feasibility' (0-10): Can this be realistically executed?\n4. 'why_now' (0-10): Is there a strong, time-sensitive reason this should exist now?\n\nYou must return your evaluation as a valid JSON object with the following keys:\n\n- "opportunity": number (0–10)\n- "problem": number (0–10)\n- "feasibility": number (0–10)\n- "why_now": number (0–10)\n- "feedback": string\n\nYour 'feedback' must include exactly 3 pros and 3 cons, separated by newlines. The tone should be firm but constructive. Do not hold back if the idea is weak. Example for feedback: "Pro: Large addressable market.\\nPro: Clear value proposition.\\nPro: Strong team-market fit.\\nCon: High customer acquisition cost.\\nCon: Potential regulatory hurdles.\\nCon: Unclear defensibility."\n\nHere are the research notes:\n{notes}`
         );
 
         const ratingChain = ratingPrompt.pipe(chatModel).pipe(new JsonOutputParser());

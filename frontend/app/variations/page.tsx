@@ -1,8 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Lightbulb, Target, TrendingUp } from 'lucide-react';
-import { useUser } from '@civic/auth/react';
+import { ArrowRight, Lightbulb, Target, TrendingUp } from 'lucide-react'
 import axios from 'axios';
 
 interface AnalysisData {
@@ -31,7 +30,7 @@ const markdownToHtml = (markdown: string): string => {
 
 const IdeaAnalysisPage: React.FC = () => {
     const [data, setData] = useState<AnalysisData | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+    const [, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
         // Get data from localStorage when component mounts

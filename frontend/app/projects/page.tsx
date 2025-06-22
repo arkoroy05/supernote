@@ -11,7 +11,12 @@ interface Project {
     _id: string;
     name: string;
     updatedAt: string; // Mongoose provides this timestamp
-    nodes: any[];      // Array of nodes to get the count
+    nodes: Array<{
+        id: string;
+        title: string;
+        data?: Record<string, unknown>;
+        position?: { x: number; y: number };
+    }>;      // Array of nodes to get the count
     // You can add more properties like 'tags' if you add them to your backend schema
 }
 
