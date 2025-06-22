@@ -192,15 +192,6 @@ const nodeTypes = {
     ),
 };
 
-// ProjectRating interface definition
-interface ProjectRating {
-    opportunity: number;
-    problem: number;
-    feasibility: number;
-    why_now: number;
-    feedback: string;
-}
-
 export default function GraphPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: projectId } = use(params);
     const router = useRouter();
