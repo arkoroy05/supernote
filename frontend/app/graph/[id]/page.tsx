@@ -466,10 +466,6 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
 
     return (
         <div className="w-full h-screen bg-gray-100">
-            <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur-sm shadow-xl rounded-lg p-4 max-w-md border border-gray-200">
-                <h1 className="text-xl font-bold text-gray-900">Project Mindmap</h1>
-                <p className="text-sm text-gray-600">Click a node to explore details or use the side panel to evaluate your idea.</p>
-            </div>
 
             <div className="flex h-full w-full">
                 <div className="flex-grow h-full">
