@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@civic/auth": "^0.8.0",
+    "@headlessui/react": "^2.2.4",
     "@motionone/utils": "^10.18.0",
     "@number-flow/react": "^0.5.10",
     "@radix-ui/react-avatar": "^1.1.10",

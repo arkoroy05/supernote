@@ -33,6 +33,7 @@ import {
     ChevronDown,
     ChevronUp,
     Lightbulb,
+    LoaderCircle,
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
@@ -42,6 +43,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RequestGrantButton } from "@/components/web3/RequestGrantButton";
+import ModalDialog from "@/components/ModalDialog";
 
 // Extend Window interface
 declare global {
@@ -121,17 +124,17 @@ const CreateNodeModal: React.FC<{
         const finalPrompt = selectedIdeaType ? `${selectedIdeaType}: ${prompt}` : prompt;
         // The backend will generate the real title, but we can pass a hint
         const titleHint = selectedIdeaType || "AI Generated Idea";
-        
+
         try {
             await onCreateFromPrompt(finalPrompt, titleHint);
         } catch (error) {
-             console.error("Creation failed", error);
+            console.error("Creation failed", error);
         } finally {
             setIsGenerating(false);
             onClose(); // Close modal regardless of outcome
         }
     };
-    
+
     if (!isOpen) return null;
 
     return (
@@ -204,7 +207,13 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
         feasibility: { score: 6 },
         whyNow: { score: 9 },
     });
-    
+
+    const [selectedValidatePresetItem, setSelectedValidatePresetItem] = useState<number>(-1);
+    const [customValidatePrompt, setCustomValidatePrompt] = useState<string>("");
+    const [generatingPitch, setGeneratingPitch] = useState(false);
+    const [stealthPitchDialogOpen, setStealthPitchDialogOpen] = useState(false);
+    const [stealthPitch, setStealthPitch] = useState<string>("");
+
     const handleNodeClick = useCallback((nodeId: string) => {
         const clickedNode = nodes.find((node) => node.id === nodeId);
         if (clickedNode && projectId) {
@@ -234,7 +243,7 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
             { parentNodeId: selectedParentId, prompt, title, position: newPosition },
             { withCredentials: true }
         );
-        
+
         const { newNode, newEdge } = response.data;
 
         if (newNode && newEdge) {
@@ -254,7 +263,7 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
         try {
             const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}`, { withCredentials: true });
             if (response?.data) {
-                setNodes(response.data.nodes.map((snode: {id: string, title: string, position: {x: number, y: number}, data: {label: string}}) => ({
+                setNodes(response.data.nodes.map((snode: { id: string, title: string, position: { x: number, y: number }, data: { label: string } }) => ({
                     id: snode.id,
                     type: "ideaNode",
                     position: { x: snode.position.x, y: snode.position.y },
@@ -264,7 +273,7 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                         fullContent: snode.data.label,
                     },
                 } as Node<NodeData>)));
-                setEdges(response.data.edges.map((sedge: {id: string, source: string, target: string}) => ({
+                setEdges(response.data.edges.map((sedge: { id: string, source: string, target: string }) => ({
                     id: sedge.id,
                     source: sedge.source,
                     target: sedge.target,
@@ -305,6 +314,41 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
         }
     }, [projectId, nodes]);
 
+    const generateStealthPitch = useCallback(async (validationMetric: string) => {
+        setGeneratingPitch(true);
+        try {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}/generate-pitch`,
+                { validationMetric }, { withCredentials: true });
+
+            if (response?.data) {
+                // console.log(response.data);
+                setStealthPitch(response.data.pitch);
+                setStealthPitchDialogOpen(true);
+            }
+        } catch (error) {
+            console.error("Error loading project:", error);
+        } finally {
+            setGeneratingPitch(false);
+        }
+    }, [projectId]);
+
+    const postPitch = useCallback(async () => {
+        try {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stealth`,
+                {
+                    title: 'untitled',
+                    pitch: stealthPitch,
+                    amount: 0.05,
+                }, { withCredentials: true });
+
+            if (response?.data) {
+                console.log(response.data);
+            }
+        } catch (error) {
+            console.error("Error loading project:", error);
+        }
+    }, [stealthPitch]);
+
     useEffect(() => {
         window.__handleNodeClick = handleNodeClick;
         window.__handleCreateNode = handleCreateNode;
@@ -337,26 +381,26 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                 <h1 className="text-xl font-bold text-gray-900">Project Mindmap</h1>
                 <p className="text-sm text-gray-600">Click a node to explore details or use the side panel to evaluate your idea.</p>
             </div>
-            
+
             <div className="flex h-full w-full">
                 <div className="flex-grow h-full">
                     <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={(changes) => {
-                    onNodesChange(changes);
-                    updateNodePositions();
-                }}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                nodeTypes={nodeTypes}
-                fitView
-                className="bg-gray-50"
-            >
-                <Controls className="bg-white shadow-lg rounded-lg" />
-                <MiniMap className="bg-white rounded-lg shadow-lg" nodeColor="#3b82f6" />
-                <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
-            </ReactFlow>
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={(changes) => {
+                            onNodesChange(changes);
+                            updateNodePositions();
+                        }}
+                        onEdgesChange={onEdgesChange}
+                        onConnect={onConnect}
+                        nodeTypes={nodeTypes}
+                        fitView
+                        className="bg-gray-50"
+                    >
+                        <Controls className="bg-white shadow-lg rounded-lg" />
+                        <MiniMap className="bg-white rounded-lg shadow-lg" nodeColor="#3b82f6" />
+                        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
+                    </ReactFlow>
                 </div>
 
                 <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto flex flex-col shadow-2xl z-10">
@@ -364,18 +408,85 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                         <CollapsibleTrigger className="w-full flex items-center justify-between p-4 hover:bg-slate-50 text-left">
                             <div className="flex items-center gap-3">
                                 <Lightbulb className="w-5 h-5 text-purple-600" />
-                                <span className="text-base font-semibold text-gray-800">Ideate & Validate</span>
+                                <span className="text-base font-semibold text-gray-800">Stealth Pitch</span>
                             </div>
                             {isIdeateOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="p-4 bg-slate-50/70">
-                             <p className="text-sm text-gray-600 mb-3">Validate different aspects of your idea. More validations will be enabled as your idea progresses.</p>
+                        <CollapsibleContent className="p-4 pt-1 bg-slate-50/70">
+                            <p className="text-sm text-gray-600 mb-4">A confidential approach to seeking investment or partnerships, where you quietly and selectively engage potential funders or collaborators without publicizing your intentions.</p>
                             {/* This section can be built out further with more functionality */}
+                            <div className="w-full flex flex-col gap-2">
+
+                                {ideaTypes.map((idea, index) => (
+                                    <button
+                                        key={idea.title}
+                                        onClick={() => {
+                                            if (selectedValidatePresetItem === index) {
+                                                setSelectedValidatePresetItem(-1);
+                                            }
+                                            else {
+                                                setSelectedValidatePresetItem(index);
+                                            }
+                                        }}
+                                        className={`px-4 py-2 bg-white border-2 rounded-lg gap-2 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex items-center text-center focus:outline-none  ${selectedValidatePresetItem === index ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                                    >
+                                        <idea.icon className={`w-5 h-5  ${selectedValidatePresetItem === index ? 'text-blue-600' : 'text-blue-500'}`} />
+                                        <h3 className="text-sm font-semibold text-gray-800">{idea.title}</h3>
+                                    </button>
+                                ))}
+
+                                {selectedValidatePresetItem === -1 ? <div className="flex items-center my-2">
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                    <span className="flex-shrink mx-4 text-gray-500 text-sm">OR</span>
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                </div> :
+                                    <div className="flex my-2">
+                                        <span className="flex-shrink mx-4 text-gray-800 text-sm">Additional Instructions:</span>
+                                    </div>}
+
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={customValidatePrompt}
+                                        onChange={(e) => setCustomValidatePrompt(e.target.value)}
+                                        placeholder={selectedValidatePresetItem === -1 ? "Enter a custom prompt..." : "Enter additional instructions..."}
+                                        className="w-full px-4 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:border-gray-600 hover:border-gray-800 transition-all duration-200 text-sm"
+                                    />
+                                </div>
+
+                                <Button
+                                    onClick={() => {
+                                        let validationMetric;
+                                        if (selectedValidatePresetItem !== -1) {
+                                            if (customValidatePrompt) {
+                                                validationMetric = `Validation metric: ${ideaTypes[selectedValidatePresetItem].title} || Extra instructions: ${customValidatePrompt}`;
+                                            }
+                                            else {
+                                                validationMetric = ideaTypes[selectedValidatePresetItem].title;
+                                            }
+                                        }
+                                        else {
+                                            validationMetric = customValidatePrompt;
+                                        }
+                                        generateStealthPitch(validationMetric);
+                                        setGeneratingPitch(true);
+                                    }}
+                                    className="w-full my-1"
+                                    disabled={generatingPitch}
+                                >
+                                    {generatingPitch ? <><LoaderCircle className="w-5 h-5 mr-1 spin-slow" />
+                                        Generating...</> : <><Sparkles className="w-5 h-5 mr-1 " />
+                                        Generate Stealth Pitch</>}
+                                </Button>
+
+                                <RequestGrantButton />
+                            </div>
+
                         </CollapsibleContent>
                     </Collapsible>
-                    
+
                     <Collapsible open={isEvaluateOpen} onOpenChange={setIsEvaluateOpen} className="border-b border-gray-200">
-                         <CollapsibleTrigger className="w-full flex items-center justify-between p-4 hover:bg-slate-50 text-left">
+                        <CollapsibleTrigger className="w-full flex items-center justify-between p-4 hover:bg-slate-50 text-left">
                             <div className="flex items-center gap-3">
                                 <BarChart3 className="w-5 h-5 text-blue-600" />
                                 <span className="text-base font-semibold text-gray-800">Evaluate Idea Score</span>
@@ -387,11 +498,11 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                                 <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-green-800">Opportunity</h3><span className="font-bold text-lg text-green-900">{evaluations.opportunity.score}/10</span></div>
                                 <div className="w-full bg-green-200 rounded-full h-1.5"><div className="bg-green-600 h-1.5 rounded-full" style={{ width: `${evaluations.opportunity.score * 10}%` }}></div></div>
                             </CardContent></Card>
-                             <Card className="bg-red-50 border-red-200 shadow-sm"><CardContent className="p-3">
+                            <Card className="bg-red-50 border-red-200 shadow-sm"><CardContent className="p-3">
                                 <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-red-800">Problem Severity</h3><span className="font-bold text-lg text-red-900">{evaluations.problem.score}/10</span></div>
                                 <div className="w-full bg-red-200 rounded-full h-1.5"><div className="bg-red-600 h-1.5 rounded-full" style={{ width: `${evaluations.problem.score * 10}%` }}></div></div>
                             </CardContent></Card>
-                             <Card className="bg-blue-50 border-blue-200 shadow-sm"><CardContent className="p-3">
+                            <Card className="bg-blue-50 border-blue-200 shadow-sm"><CardContent className="p-3">
                                 <div className="flex items-center justify-between mb-1"><h3 className="font-medium text-blue-800">Feasibility</h3><span className="font-bold text-lg text-blue-900">{evaluations.feasibility.score}/10</span></div>
                                 <div className="w-full bg-blue-200 rounded-full h-1.5"><div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${evaluations.feasibility.score * 10}%` }}></div></div>
                             </CardContent></Card>
@@ -412,6 +523,14 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                 onClose={() => setModalOpen(false)}
                 onCreateFromPrompt={createNodeFromPrompt}
                 parentTitle={selectedParentTitle}
+            />
+            <ModalDialog
+                title="Stealth Pitch"
+                content={stealthPitch}
+                open={stealthPitchDialogOpen}
+                setOpen={setStealthPitchDialogOpen}
+                onConfirm={postPitch}
+                onCancel={() => console.log('stealth pitch Cancelled')}
             />
         </div>
     );

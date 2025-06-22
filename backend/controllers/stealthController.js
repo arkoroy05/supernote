@@ -10,17 +10,15 @@ const postStealthPitch = async (req, res) => {
 
         
         // Assuming user ID is available in req.user from an auth middleware
-        const user = req.user.id;
-        // const user = await req.civicAuth.getUser()?.id;
-        
-        console.log(req.user, user);
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
 
         if (!pitch) {
             return res.status(400).json({ message: 'Pitch content is required.' });
         }
 
         const newPitch = new StealthPitch({
-            user,
+            user: userId,
             title,
             pitch,
             amount,
@@ -29,6 +27,7 @@ const postStealthPitch = async (req, res) => {
         const createdPitch = await newPitch.save();
         res.status(201).json(createdPitch);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ message: 'Server Error: ' + error.message });
     }
 };

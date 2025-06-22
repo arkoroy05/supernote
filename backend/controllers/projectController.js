@@ -113,13 +113,13 @@ export const converseWithNode = async (req, res) => {
         const _user = await req.civicAuth.getUser();
         const userId = _user.id;
         const project = await Project.findOne({ _id: projectId, user: userId });
-        
+
         if (!project) {
             return res.status(404).json({ message: 'Project not found or you do not have permission.' });
         }
 
         const conversation_history = buildHierarchicalContext(project.nodes, project.edges, parentNodeId);
-        
+
         // Define a Zod schema to enforce the AI's output structure.
         const titleAndContentSchema = z.object({
             title: z.string().describe("A concise, 5-10 word title for the generated content."),
@@ -168,7 +168,7 @@ export const converseWithNode = async (req, res) => {
             id: `node_${Date.now()}`,
             data: { label: result.content, prompt: prompt },
             position: position,
-            title: result.title, 
+            title: result.title,
         };
 
         const newEdge = {
@@ -194,7 +194,9 @@ export const synthesizeDocument = async (req, res) => {
 
 
     try {
-        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+        const project = await Project.findOne({ _id: projectId, user: userId });
         if (!project) {
             return res.status(404).json({ message: 'Project not found.' });
         }
@@ -260,7 +262,9 @@ export const updateProjectRating = async (req, res) => {
 
 
     try {
-        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+        const project = await Project.findOne({ _id: projectId, user: userId });
         if (!project) return res.status(404).json({ message: 'Project not found.' });
 
 
@@ -285,23 +289,21 @@ export const updateProjectRating = async (req, res) => {
 
 export const generateValidationPitch = async (req, res) => {
     const { projectId } = req.params;
-
-    const { nodeIds, validationMetric } = req.body;
-
-    if (!nodeIds || !validationMetric || nodeIds.length === 0) {
-        return res.status(400).json({ message: 'Node IDs and a validation metric are required.' });
-    }
+    const { validationMetric } = req.body;
 
     try {
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+        const project = await Project.findOne({ _id: projectId, user: userId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
+        }
 
-        const project = await Project.findOne({ _id: projectId, user: req.user.id });
-        if (!project) return res.status(404).json({ message: 'Project not found.' });
+        const ideaSummary = buildFullGraphContext(project.nodes, project.edges);
 
-
-        const ideaSummary = nodeIds
-            .map(id => buildHierarchicalContext(project.nodes, project.edges, id))
-            .join('\n\n---\n\n');
-
+        if (!ideaSummary) {
+            return res.status(400).json({ message: 'Cannot summarize an empty project.' });
+        }
 
         const pitchPrompt = PromptTemplate.fromTemplate(
             `You are a stealth marketing expert. Your goal is to validate a startup idea without revealing that you are building it. You will write a short post or message designed to be shared on a platform like Reddit, LinkedIn, or a specific forum to gauge real-world user reaction.\n\n` +
@@ -333,7 +335,9 @@ export const regenerateNode = async (req, res) => {
     const { newPrompt } = req.body;
 
     try {
-        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+        const project = await Project.findOne({ _id: projectId, user: userId });
         if (!project) return res.status(404).json({ message: 'Project not found.' });
 
         const nodeToUpdate = project.nodes.find(n => n.id === nodeId);
@@ -411,7 +415,7 @@ export const updateNodePositions = async (req, res) => {
         const _user = await req.civicAuth.getUser();
         const userId = _user.id;
         const project = await Project.findOne({ _id: projectId, user: userId });
-        
+
         if (!project) {
             return res.status(404).json({ message: 'Project not found or you do not have permission.' });
         }
