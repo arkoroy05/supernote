@@ -192,13 +192,19 @@ export const converseWithNode = async (req, res) => {
 export const synthesizeDocument = async (req, res) => {
     const { projectId } = req.params;
 
-
     try {
-        const project = await Project.findOne({ _id: projectId, user: req.user.id });
+        // --- START OF CORRECTION ---
+        // Get the user ID using the correct authentication method
+        const _user = await req.civicAuth.getUser();
+        const userId = _user.id;
+
+        // Find the project using the correct userId
+        const project = await Project.findOne({ _id: projectId, user: userId });
+        // --- END OF CORRECTION ---
+
         if (!project) {
             return res.status(404).json({ message: 'Project not found.' });
         }
-
 
         const synthesisContext = buildFullGraphContext(project.nodes, project.edges);
 
@@ -217,6 +223,7 @@ export const synthesizeDocument = async (req, res) => {
         const finalReport = await synthesisChain.invoke({ notes: synthesisContext });
 
         res.status(200).json({ document: finalReport });
+        console.log('Document synthesized successfully:', finalReport);
     } catch (error) {
         console.error('Error synthesizing document:', error);
         res.status(500).json({ message: 'Error synthesizing document.' });

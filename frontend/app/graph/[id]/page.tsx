@@ -212,6 +212,20 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
     const [selectedParentTitle, setSelectedParentTitle] = useState<string>("");
     const [isIdeateOpen, setIsIdeateOpen] = useState(true);
     const [isEvaluateOpen, setIsEvaluateOpen] = useState(true);
+    // const [evaluations] = useState({
+    //     opportunity: { score: 9 },
+    //     problem: { score: 10 },
+    //     feasibility: { score: 6 },
+    //     whyNow: { score: 9 },
+    // });
+    const [isSynthesizing, setIsSynthesizing] = useState(false);
+    interface ProjectRating {
+        opportunity: number;
+        problem: number;
+        feasibility: number;
+        why_now: number;
+        feedback: string;
+    }
     const [projectRating, setProjectRating] = useState<ProjectRating | null>(null);
     const [isRating, setIsRating] = useState(false);
 
@@ -234,6 +248,10 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
             setIsRating(false);
         }
     }, [projectId]);
+
+
+
+    
     
     const handleNodeClick = useCallback((nodeId: string) => {
         const clickedNode = nodes.find((node) => node.id === nodeId);
@@ -352,7 +370,46 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
         if (projectId) loadProject();
     }, [projectId, loadProject]);
 
+    useEffect(() => {
+        if (projectId) {
+            const needsUpdate = localStorage.getItem('needsRatingUpdate');
+            if (needsUpdate === 'true') {
+                // Remove the flag immediately to prevent re-triggering on refresh
+                localStorage.removeItem('needsRatingUpdate');
+                // Call the function to hit the /rate endpoint and refresh scores
+                triggerRatingUpdate();
+            }
+        }
+    }, [projectId, triggerRatingUpdate]);
+
     const onConnect = useCallback((params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+
+    const handleSynthesizeReport = async () => {
+        if (!projectId) {
+            alert("Project ID is missing.");
+            return;
+        }
+        setIsSynthesizing(true);
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/project/${projectId}/synthesize`,
+                {},
+                { withCredentials: true }
+            );
+
+            if (response.data?.document) {
+                // Store the generated markdown in localStorage to pass it to the next page
+                localStorage.setItem('synthesizedReport', response.data.document);
+                // Navigate to the synthesize page for this project
+                router.push(`/synthesize/${projectId}`);
+            }
+        } catch (error) {
+            console.error("Failed to synthesize report:", error);
+            alert("An error occurred while generating the report.");
+        } finally {
+            setIsSynthesizing(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -466,7 +523,15 @@ export default function GraphPage({ params }: { params: Promise<{ id: string }> 
                         </CollapsibleContent>
                     </Collapsible>
                     <div className="p-4 mt-auto border-t border-gray-200">
-                        <Button className="w-full bg-gray-800 hover:bg-gray-900 text-white">Synthesize Full Report</Button>
+                        <div className="p-4 mt-auto border-t border-gray-200 bg-white">
+                        <Button 
+                            onClick={handleSynthesizeReport} 
+                            disabled={isSynthesizing}
+                            className="w-full bg-gray-800 hover:bg-gray-900 text-white"
+                        >
+                            {isSynthesizing ? 'Generating...' : 'Synthesize Full Report'}
+                        </Button>
+                    </div>
                     </div>
                 </div>
             </div>

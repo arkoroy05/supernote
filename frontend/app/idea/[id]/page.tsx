@@ -114,6 +114,8 @@ export default function IdeaDetailPage() {
                     type: 'ideaNode',
                 };
                 
+                localStorage.setItem('needsRatingUpdate', 'true');
+                
                 localStorage.setItem('selectedNode', JSON.stringify(nextNodeForStorage));
                 // Force a full page navigation to the new node's page to reload all state
                 window.location.href = `/idea/${newNode.id}`;
